@@ -1,4 +1,5 @@
-identicon [![Build Status](https://travis-ci.org/issue9/identicon.svg?branch=master)](https://travis-ci.org/issue9/identicon)
+identicon
+[![Build Status](https://travis-ci.org/issue9/identicon.svg?branch=master)](https://travis-ci.org/issue9/identicon)
 ======
 
 根据用户的 IP 、邮箱名等任意数据为用户产生漂亮的随机头像。

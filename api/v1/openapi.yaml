@@ -1,0 +1,77 @@
+---
+
+swagger: '2.0'
+
+info:
+  version: 0.0.1
+  title: Indagate API
+  description: API of the Indagate (https://ustackq.io/indagate)
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+
+consumes:
+  - "application/json"
+produces:
+  - "application/json"
+
+paths:
+  /install:
+    post:
+      tags:
+        - general
+      operationId: postConfig
+      description: Post a new config or update an existing one
+      parameters:
+        - in: body
+          name: config
+          description: The config to create
+          required: true
+          schema:
+            $ref: '#/definitions/indagateConfig'
+      responses:
+        '200':
+          description: Create / update silence response
+        '400':
+          $ref: '#/responses/BadRequest'
+        '404':
+          description: A silence with the specified ID was not found
+          schema:
+            type: string
+
+responses:
+  BadRequest:
+    description: Bad request
+    schema:
+      type: string
+  InternalServerError:
+    description: Internal server error
+    schema:
+      type: string
+
+
+definitions:
+  indagateConfig:
+    type: object
+    properties:
+      host:
+        type: string
+      port:
+        type: string
+      user:
+        type: string
+      prefix:
+        type: string
+      database:
+        type: string
+    required:
+      - host
+      - port
+      - user
+      - prefix
+      - database
+ 
+tags:
+  - name: general
+    description: General Indagate operations
+  

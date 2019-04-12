@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/ustackq/indagate/cmd/app"
@@ -12,9 +13,19 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	logLevelKey = "indagate"
+)
+
 func main() {
+	// consider runtime library usage
+	if os.Getenv("DEBUG") != "" {
+		runtime.SetBlockProfileRate(20)
+		runtime.SetMutexProfileFraction(20)
+	}
 	// consider the reason why using it?
 	rand.Seed(time.Now().UnixNano())
+
 	logger, err := zap.NewProduction()
 	if err != nil {
 		log.Fatalf("can't initialize zap logger: %v", err)

@@ -85,14 +85,20 @@ github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
+# github.com/influxdata/influxdb v1.7.4
+github.com/influxdata/influxdb/pkg/snowflake
 # github.com/issue9/identicon v1.0.1
 github.com/issue9/identicon
 # github.com/jessevdk/go-flags v1.4.0
 github.com/jessevdk/go-flags
 # github.com/json-iterator/go v1.1.5
 github.com/json-iterator/go
+# github.com/jsternberg/zap-logfmt v1.2.0
+github.com/jsternberg/zap-logfmt
 # github.com/juju/ratelimit v1.0.1
 github.com/juju/ratelimit
+# github.com/julienschmidt/httprouter v0.0.0-20170430222011-975b5c4c7c21
+github.com/julienschmidt/httprouter
 # github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515
 github.com/kr/logfmt
 # github.com/lib/pq v1.0.0
@@ -126,15 +132,18 @@ github.com/nu7hatch/gouuid
 github.com/olekukonko/tablewriter
 # github.com/pelletier/go-toml v1.2.0
 github.com/pelletier/go-toml
-# github.com/prometheus/client_golang v0.8.0
+# github.com/prometheus/client_golang v0.9.2
 github.com/prometheus/client_golang/prometheus
+github.com/prometheus/client_golang/prometheus/promhttp
+github.com/prometheus/client_golang/prometheus/internal
 # github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910
 github.com/prometheus/client_model/go
-# github.com/prometheus/common v0.0.0-20180801064454-c7de2306084e
+# github.com/prometheus/common v0.0.0-20181126121408-4724e9255275
+github.com/prometheus/common/route
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/model
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
-# github.com/prometheus/procfs v0.0.0-20180725123919-05ee40e3a273
+# github.com/prometheus/procfs v0.0.0-20181204211112-1dc9a6cbc91a
 github.com/prometheus/procfs
 github.com/prometheus/procfs/nfs
 github.com/prometheus/procfs/xfs
@@ -166,8 +175,8 @@ go.uber.org/atomic
 go.uber.org/multierr
 # go.uber.org/zap v1.9.1
 go.uber.org/zap
-go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/zapcore
+go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/buffer
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit

@@ -50,6 +50,8 @@ func init() {
 }
 
 // NewIndagateCommand create  coomand object with default parameters
+// TODO: using context to handle stop
+// https://github.com/influxdata/influxdb/blob/master/cmd/influxd/launcher/launcher.go
 func NewIndagateCommand(stopCh <-chan struct{}, logger log.Logger) *cobra.Command {
 	cleanFlagSet := pflag.NewFlagSet(component, pflag.ContinueOnError)
 	indagateFlags := options.NewIndagateFlags()

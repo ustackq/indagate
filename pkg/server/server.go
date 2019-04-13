@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/ustackq/indagate/pkg/logger"
@@ -110,4 +111,15 @@ func (s *Server) notifyOnSignals() (_ <-chan os.Signal, cancel func()) {
 	sigCh := make(chan os.Signal, 2*len(signals))
 	signal.Notify(sigCh, signals...)
 	return sigCh, func() { signal.Stop(sigCh) }
+}
+
+func LinstenAndServe(addr string, h http.Handler, logger *zap.Logger) error {
+	l, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+
+	server := NewServer(h, logger)
+	server.ListenSignals(os.Interrupt, syscall.SIGTERM)
+	return server.Serve(l)
 }

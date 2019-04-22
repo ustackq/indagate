@@ -19,3 +19,8 @@ type BasicAuth struct {
 	Paasword     Secret `yaml:"password"`
 	PaaswordFile string `yaml:"password_file,omitempty" `
 }
+
+func New() *Config {
+	config := Config{}
+	return &config
+}

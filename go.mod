@@ -3,6 +3,7 @@ module github.com/ustackq/indagate
 require (
 	cloud.google.com/go v0.36.0 // indirect
 	github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da // indirect
+	github.com/coreos/go-systemd v0.0.0-20181012123002-c6f51f82210d
 	github.com/denisenkom/go-mssqldb v0.0.0-20190204142019-df6d76eb9289
 	github.com/ghodss/yaml v1.0.0
 	github.com/gin-contrib/sse v0.0.0-20190125020943-a7658810eb74 // indirect
@@ -54,6 +55,7 @@ require (
 	github.com/prometheus/client_golang v0.9.2
 	github.com/robfig/cron v0.0.0-20180505203441-b41be1df6967
 	github.com/rs/cors v1.6.0
+	github.com/sirupsen/logrus v1.4.1
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.3.1
@@ -68,6 +70,7 @@ require (
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
+	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/klog v0.2.0
 )
 

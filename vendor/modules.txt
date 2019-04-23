@@ -10,6 +10,8 @@ github.com/armon/go-metrics
 github.com/asaskevich/govalidator
 # github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973
 github.com/beorn7/perks/quantile
+# github.com/coreos/go-systemd v0.0.0-20181012123002-c6f51f82210d
+github.com/coreos/go-systemd/daemon
 # github.com/denisenkom/go-mssqldb v0.0.0-20190204142019-df6d76eb9289
 github.com/denisenkom/go-mssqldb
 github.com/denisenkom/go-mssqldb/internal/cp
@@ -105,6 +107,9 @@ github.com/influxdata/influxdb/pkg/snowflake
 github.com/issue9/identicon
 # github.com/jessevdk/go-flags v1.4.0
 github.com/jessevdk/go-flags
+# github.com/jmoiron/sqlx v1.2.0
+github.com/jmoiron/sqlx
+github.com/jmoiron/sqlx/reflectx
 # github.com/json-iterator/go v1.1.5
 github.com/json-iterator/go
 # github.com/jsternberg/zap-logfmt v1.2.0

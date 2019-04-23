@@ -2,10 +2,15 @@ package app
 
 import (
 	"os"
+	"os/signal"
+	"syscall"
 
+	"github.com/coreos/go-systemd/daemon"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/ustackq/indagate/config"
+	"github.com/ustackq/indagate/pkg/utils/flag"
+	"github.com/ustackq/indagate/pkg/version"
 )
 
 var serverCmd = &cobra.Command{
@@ -14,7 +19,17 @@ var serverCmd = &cobra.Command{
 	RunE:  serverCmdF,
 }
 
+func init() {
+	RootCmd.AddCommand(serverCmd)
+	RootCmd.RunE = serverCmdF
+}
+
 func serverCmdF(cmd *cobra.Command, args []string) error {
+	// flag --version
+	version.PrintAndExitIfRequested()
+	// print flag and value
+	flag.PrintFlags(cmd.Flags())
+
 	cfg := viper.GetString("config")
 
 	disable, err := cmd.Flags().GetBool("configWacher")
@@ -32,5 +47,10 @@ func serverCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func runServer(cfg config.Store, disable bool, interChan chan os.Signal) error {
+
+	// handle signal
+	go daemon.SdNotify(false, daemon.SdNotifyReady)
+	signal.Notify(interChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	<-interChan
 	return nil
 }

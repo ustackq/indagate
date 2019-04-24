@@ -2,6 +2,7 @@ package options
 
 import (
 	"context"
+	"fmt"
 	"io"
 	nethttp "net/http"
 	"os"
@@ -9,9 +10,11 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v2"
 
 	"github.com/ustackq/indagate/config"
 	"github.com/ustackq/indagate/pkg/http"
+	"github.com/ustackq/indagate/pkg/logger"
 	"github.com/ustackq/indagate/pkg/metrics"
 	"github.com/ustackq/indagate/pkg/nats"
 )
@@ -80,4 +83,46 @@ func (ing *Indagate) Shutdown(ctx context.Context) {
 	ing.Logger.Info("Shutting donw", zap.String("service", "nats"))
 	ing.natsServer.Close()
 	ing.Logger.Sync()
+}
+
+// Parse parse cfg to build indagate
+func (ing *Indagate) Parse(cfg string) {
+	var conf config.Configuration
+	if f, err := os.Lstat(cfg); !f.Mode().IsRegular() || err != nil {
+		fmt.Fprintln(ing.Stderr, err)
+		os.Exit(1)
+	}
+	f, err := os.Open(cfg)
+	if err != nil {
+		fmt.Fprintln(ing.Stderr, err)
+		os.Exit(1)
+	}
+	if err = yaml.NewDecoder(f).Decode(&conf); err != nil {
+		fmt.Fprintln(ing.Stderr, err)
+		os.Exit(1)
+	}
+	lconf := &logger.Config{
+		Format: "auto",
+		Level:  conf.Loglevel,
+	}
+	log, err := lconf.New(ing.Stdout)
+	if err != nil {
+		fmt.Fprintln(ing.Stderr, err)
+		os.Exit(1)
+	}
+	configStore, err := config.NewStore(ing.Config, false)
+	if err != nil {
+		fmt.Fprintln(ing.Stderr, err)
+		os.Exit(1)
+	}
+	ing.storeConfig = configStore
+	ing.Logger = log
+}
+
+func (ing *Indagate) Store() config.Store {
+	return ing.storeConfig
+}
+
+func (ing *Indagate) SecretStore() config.Store {
+	return ing.secretConfig
 }

@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	"go.uber.org/zap/zapcore"
 )
 
 // Configuration is a versioned registry configuration, intended to be provided by a yaml file, and
@@ -30,7 +32,7 @@ type Configuration struct {
 		} `yaml:"accesslog,omitempty"`
 
 		// Level is the granularity at which registry operations are logged.
-		Level Loglevel `yaml:"level,omitempty"`
+		Level zapcore.Level `yaml:"level,omitempty"`
 
 		// Formatter overrides the default formatter with another. Options
 		// include "text", "json" and "logstash".
@@ -48,7 +50,7 @@ type Configuration struct {
 	// Loglevel is the level at which registry operations are logged.
 	//
 	// Deprecated: Use Log.Level instead.
-	Loglevel Loglevel `yaml:"loglevel,omitempty"`
+	Loglevel zapcore.Level `yaml:"loglevel,omitempty"`
 
 	// Storage is the configuration for the registry's storage driver
 	Storage Storage `yaml:"storage"`
@@ -373,14 +375,11 @@ func (version *Version) UnmarshalYAML(unmarshal func(interface{}) error) error {
 // CurrentVersion is the most recent Version that can be parsed
 var CurrentVersion = MajorMinorVersion(0, 1)
 
-// Loglevel is the level at which operations are logged
-// This can be error, warn, info, or debug
-type Loglevel string
-
 // UnmarshalYAML implements the yaml.Umarshaler interface
 // Unmarshals a string into a Loglevel, lowercasing the string and validating that it represents a
 // valid loglevel
-func (loglevel *Loglevel) UnmarshalYAML(unmarshal func(interface{}) error) error {
+/*
+func (loglevel *zapcore.Level) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var loglevelString string
 	err := unmarshal(&loglevelString)
 	if err != nil {
@@ -394,10 +393,10 @@ func (loglevel *Loglevel) UnmarshalYAML(unmarshal func(interface{}) error) error
 		return fmt.Errorf("invalid loglevel %s Must be one of [error, warn, info, debug]", loglevelString)
 	}
 
-	*loglevel = Loglevel(loglevelString)
+	//*loglevel = Loglevel(loglevelString)
 	return nil
 }
-
+*/
 // Parameters defines a key-value parameters mapping
 type Parameters map[string]interface{}
 
@@ -657,16 +656,18 @@ func Parse(rd io.Reader) (*Configuration, error) {
 			ParseAs: reflect.TypeOf(v0_1Configuration{}),
 			ConversionFunc: func(c interface{}) (interface{}, error) {
 				if v0_1, ok := c.(*v0_1Configuration); ok {
-					if v0_1.Log.Level == Loglevel("") {
-						if v0_1.Loglevel != Loglevel("") {
-							v0_1.Log.Level = v0_1.Loglevel
-						} else {
-							v0_1.Log.Level = Loglevel("info")
+					/*
+						if v0_1.Log.Level == Loglevel("") {
+							if v0_1.Loglevel != Loglevel("") {
+								v0_1.Log.Level = v0_1.Loglevel
+							} else {
+								v0_1.Log.Level = Loglevel("info")
+							}
 						}
-					}
-					if v0_1.Loglevel != Loglevel("") {
-						v0_1.Loglevel = Loglevel("")
-					}
+						if v0_1.Loglevel != Loglevel("") {
+							v0_1.Loglevel = Loglevel("")
+						}
+					*/
 					if v0_1.Storage.Type() == "" {
 						return nil, errors.New("no storage configuration provided")
 					}

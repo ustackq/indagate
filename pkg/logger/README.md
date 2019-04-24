@@ -1,12 +1,12 @@
 # Logging Style Guide
 
-> [Original](https://github.com/influxdata/influxdb/edit/master/logger/style_guide.md)**
+> [Inspire](https://github.com/influxdata/influxdb/edit/master/logger/style_guide.md)**
 The intention of logging is to give insight to the administrator of how
 the server is running and also notify the administrator of any problems
 or potential problems with the system.
 
 At the moment, log level filtering is the only option to configure
-logging in InfluxDB. Adding a logging message and choosing its level
+logging in Indagate. Adding a logging message and choosing its level
 should be done according to the guidelines in this document for
 operational clarity. The available log levels are:
 

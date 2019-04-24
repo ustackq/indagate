@@ -2,14 +2,15 @@ package http
 
 import (
 	"fmt"
-	"github.com/julienschmidt/httprouter"
-	"github.com/ustackq/indagate/pkg/logger"
-	"github.com/ustackq/indagate/pkg/utils/errors"
-	"go.uber.org/zap"
 	"net/http"
 	"os"
 	"runtime/debug"
 	"sync"
+
+	"github.com/julienschmidt/httprouter"
+	"github.com/ustackq/indagate/pkg/logger"
+	"github.com/ustackq/indagate/pkg/utils/errors"
+	"go.uber.org/zap"
 )
 
 // NewRouter return a new router with other handler.

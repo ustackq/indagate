@@ -8,7 +8,6 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	"github.com/ustackq/indagate/config"
 	"github.com/ustackq/indagate/pkg/service"
 )
 
@@ -101,7 +100,7 @@ func decodeSetupRequest(ctx context.Context, r *http.Request) (*service.SetupReq
 }
 
 type setupService struct {
-	Config *config.Config
+	Config string
 }
 
 // implement SetupService

@@ -31,6 +31,6 @@ func (s *Server) Open() error {
 }
 
 // Close stops NATS service
-func (s *Server) Stop() {
+func (s *Server) Close() {
 	s.Server.Shutdown()
 }

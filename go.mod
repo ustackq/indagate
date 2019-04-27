@@ -63,6 +63,7 @@ require (
 	github.com/spf13/viper v1.3.1
 	github.com/ssor/bom v0.0.0-20170718123548-6386211fdfcf
 	go.etcd.io/bbolt v1.3.2 // indirect
+	go.opencensus.io v0.18.0
 	go.uber.org/zap v1.9.1
 	golang.org/x/crypto v0.0.0-20190418165655-df01cb2cc480
 	golang.org/x/net v0.0.0-20190419010253-1f3472d942ba

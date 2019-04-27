@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"gopkg.in/yaml.v2"
 
 	"github.com/ustackq/indagate/config"
@@ -17,6 +18,7 @@ import (
 	"github.com/ustackq/indagate/pkg/logger"
 	"github.com/ustackq/indagate/pkg/metrics"
 	"github.com/ustackq/indagate/pkg/nats"
+	"github.com/ustackq/indagate/pkg/tracing"
 )
 
 // Indagate contains configuration flags for the Indagate.
@@ -134,4 +136,21 @@ func (ing *Indagate) TelemetryEnabled() bool {
 
 func (ing *Indagate) Registry() *metrics.Registry {
 	return ing.register
+}
+
+func (ing *Indagate) Run(ctx context.Context) error {
+	// start tracing
+	span, ctx := tracing.StartSpanFromContext(ctx)
+	defer span.End()
+	// set indagate server state: running
+	ing.running = true
+	// constrcut context
+	ctx, ing.cancel = context.WithCancel(ctx)
+
+	var level zapcore.Level
+	if err := level.Set(ing.logLevel); err != nil {
+		return fmt.Errorf("invalid log level; only supported DEBUG, INFO, and ERROR")
+	}
+
+	return nil
 }

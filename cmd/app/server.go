@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -54,6 +55,11 @@ func runServer(ing *options.Indagate, disable bool, interChan chan os.Signal) er
 	// https://sourcegraph.com/github.com/influxdata/influxdb/-/commit/e8045ae187702eccc6ef2529e0793f3f0ffc1092
 	ctx := context.Background()
 	defer ing.Shutdown(ctx)
+	// handl serve
+	if err := ing.Run(ctx); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 	// handle telemetry
 	var wg sync.WaitGroup
 	if ing.TelemetryEnabled() {

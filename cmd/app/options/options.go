@@ -52,7 +52,8 @@ type Indagate struct {
 		addr string
 		port string
 	}
-	server nethttp.Server
+	register *metrics.Registry
+	server   nethttp.Server
 	// Backend service
 	backend *http.APIBackend
 }
@@ -125,4 +126,12 @@ func (ing *Indagate) Store() config.Store {
 
 func (ing *Indagate) SecretStore() config.Store {
 	return ing.secretConfig
+}
+
+func (ing *Indagate) TelemetryEnabled() bool {
+	return ing.telemetry
+}
+
+func (ing *Indagate) Registry() *metrics.Registry {
+	return ing.register
 }

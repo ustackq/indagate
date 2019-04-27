@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 )
 
@@ -77,6 +77,7 @@ type Parser struct {
 	prefix  string
 	mapping map[Version]VersionedParseInfo
 	env     envVars
+	Logger  *zap.Logger
 }
 
 // NewParser returns a *Parser with the given environment prefix which handles
@@ -100,7 +101,7 @@ func NewParser(prefix string, parseInfos []VersionedParseInfo) *Parser {
 	// lot simpler and easier to get right than unmarshalling map entries
 	// into temporaries and merging with the existing entry.
 	sort.Sort(p.env)
-
+	p.Logger = zap.NewNop()
 	return &p
 }
 
@@ -195,7 +196,7 @@ func (p *Parser) overwriteStruct(v reflect.Value, fullpath string, path []string
 
 	fieldIndex, present := byUpperCase[path[0]]
 	if !present {
-		logrus.Warnf("Ignoring unrecognized environment variable %s", fullpath)
+		p.Logger.Warn("Ignoring unrecognized environment variable ", zap.String("path", fullpath))
 		return nil
 	}
 	field := v.Field(fieldIndex)
@@ -235,7 +236,7 @@ func (p *Parser) overwriteStruct(v reflect.Value, fullpath string, path []string
 func (p *Parser) overwriteMap(m reflect.Value, fullpath string, path []string, payload string) error {
 	if m.Type().Key().Kind() != reflect.String {
 		// non-string keys unsupported
-		logrus.Warnf("Ignoring environment variable %s involving map with non-string keys", fullpath)
+		p.Logger.Warn("Ignoring environment variable involving map with non-string keys", zap.String("var", fullpath))
 		return nil
 	}
 

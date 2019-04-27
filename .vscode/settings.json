@@ -1,10 +1,5 @@
 {
-    "workbench.colorTheme": "Vue Theme",
-    /*
-	"go.useLanguageServer": true,
-	"go.alternateTools": {
-		"go-langserver": "gopls"
-	},
+	"workbench.colorTheme": "Vue Theme",
 	"go.languageServerExperimentalFeatures": {
 		"format": true,
 		"autoComplete": true,
@@ -13,42 +8,50 @@
 		"signatureHelp": true,
 		"goToTypeDefinition": true
 	},
+	"[go]": {
+		"editor.snippetSuggestions": "none",
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.organizeImports": true
+		},
+	},
+	/*
+	"go.alternateTools": {
+		"go-langserver": "bingo"
+	},
+	"go.languageServerExperimentalFeatures": {
+		"autoComplete": true,
+		"documentSymbols": true,
+		"findReferences": true,
+		"format": true,
+		"goToDefinition": true,
+		"goToTypeDefinition": true,
+		"hover": true,
+		"signatureHelp": true,
+		"rename": true,
+		"workspaceSymbols": true,
+	},
 	*/
-    "go.alternateTools": {
-        "go-langserver": "bingo"
-    },
-    "go.languageServerFlags": [
-        "--enhance-signature-help",
-        "--format-style=goimports",
-        "--goimports-prefix='github.com/ustackq/indagate'", // enter your own here
-    ],
-    "go.languageServerExperimentalFeatures": {
-        "autoComplete": true,
-        "documentSymbols": true,
-        "findReferences": true,
-        "format": true,
-        "goToDefinition": true,
-        "goToTypeDefinition": true,
-        "hover": true,
-        "signatureHelp": true,
-        "rename": true,
-        "workspaceSymbols": true,
-    },
-    "go.lintOnSave": "off",
-    "go.vetOnSave": "off",
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-        "source.organizeImports": false
-    },
-    "showWeeklyRanking": true,
-    "showMusicMetrics": true,
-    "window.zoomLevel": 0,
-    "workbench.iconTheme": "eq-material-theme-icons-light",
-    "go.inferGopath": false,
-    "showGitMetrics": false,
-    "go.formatTool": "goformat",
-    "git.autofetch": true,
-    "go.useLanguageServer": true,
-    "editor.minimap.maxColumn": 520,
-    "go.docsTool": "gogetdoc"
+	"go.toolsEnvVars": {
+		"GO111MODULE": "on",
+		"GOFLAGS": "-mod=vendor"
+	},
+	"go.lintOnSave": "off",
+	"go.vetOnSave": "off",
+	"editor.formatOnSave": true,
+	"editor.codeActionsOnSave": {
+		"source.organizeImports": false
+	},
+	"showWeeklyRanking": true,
+	"showMusicMetrics": true,
+	"window.zoomLevel": 0,
+	"workbench.iconTheme": "eq-material-theme-icons-light",
+	"go.inferGopath": false,
+	"showGitMetrics": false,
+	"go.formatTool": "goformat",
+	"git.autofetch": true,
+	"go.useLanguageServer": true,
+	"editor.minimap.maxColumn": 520,
+	"go.docsTool": "gogetdoc",
+	"go.autocompleteUnimportedPackages": true
 }

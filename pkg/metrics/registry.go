@@ -10,3 +10,10 @@ type Registry struct {
 	*prometheus.Registry
 	logger *zap.Logger
 }
+
+func NewRegistry() *Registry {
+	return &Registry{
+		Registry: prometheus.NewRegistry(),
+		logger:   zap.NewNop(),
+	}
+}

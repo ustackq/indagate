@@ -19,6 +19,7 @@ import (
 	"github.com/ustackq/indagate/pkg/metrics"
 	"github.com/ustackq/indagate/pkg/nats"
 	"github.com/ustackq/indagate/pkg/tracing"
+	"github.com/ustackq/indagate/pkg/version"
 )
 
 // Indagate contains configuration flags for the Indagate.
@@ -138,7 +139,7 @@ func (ing *Indagate) Registry() *metrics.Registry {
 	return ing.register
 }
 
-func (ing *Indagate) Run(ctx context.Context) error {
+func (ing *Indagate) Run(ctx context.Context) (err error) {
 	// start tracing
 	span, ctx := tracing.StartSpanFromContext(ctx)
 	defer span.End()
@@ -151,6 +152,36 @@ func (ing *Indagate) Run(ctx context.Context) error {
 	if err := level.Set(ing.logLevel); err != nil {
 		return fmt.Errorf("invalid log level; only supported DEBUG, INFO, and ERROR")
 	}
+
+	// build logger conf
+	logConf := &logger.Config{
+		Format: "auto",
+		Level:  level,
+	}
+	ing.Logger, err = logConf.New(os.Stdout)
+	if err != nil {
+		return err
+	}
+
+	// build version
+	info := version.Get()
+	ing.Logger.Info("Welcome to Indagate",
+		zap.String("Version", info.GitVersion),
+		zap.String("commit", info.GitCommit),
+		zap.String("BuildDate", info.BuildDate),
+	)
+
+	// config tracing
+	switch ing.tracingType {
+	case "census":
+		ing.Logger.Info("tracing via Census")
+		// sth need to be done here.
+	}
+
+	// define cache type
+	// Now we config and init store in parse step.
+
+	// define store type
 
 	return nil
 }

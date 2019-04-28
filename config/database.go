@@ -82,3 +82,7 @@ func (ds *DatabaseStore) Load() (err error) {
 	}
 	return nil
 }
+
+func (ds *DatabaseStore) Flush() {
+
+}

@@ -5,6 +5,7 @@ import "strings"
 type Store interface {
 	// Load updates the current configuration from the backing store, possibly initializing.
 	Load() (err error)
+	Flush()
 }
 
 func NewStore(cfg string, watch bool) (Store, error) {

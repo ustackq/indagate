@@ -17,3 +17,7 @@ func NewRegistry() *Registry {
 		logger:   zap.NewNop(),
 	}
 }
+
+func (reg *Registry) WithLogger(logger *zap.Logger) {
+	reg.logger = logger.With(zap.String("service", "registry"))
+}

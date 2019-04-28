@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/yaml.v2"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/ustackq/indagate/config"
 	"github.com/ustackq/indagate/pkg/http"
 	"github.com/ustackq/indagate/pkg/logger"
@@ -182,6 +183,11 @@ func (ing *Indagate) Run(ctx context.Context) (err error) {
 	// Now we config and init store in parse step.
 
 	// define store type
-
+	// registry metrics collector: GoCollector, serviceCollector
+	ing.register.MustRegister(
+		prometheus.NewGoCollector(),
+		metrics.NewIndagateCollector("indagate", info),
+	)
+	ing.register.WithLogger(ing.Logger)
 	return nil
 }

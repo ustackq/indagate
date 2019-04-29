@@ -45,7 +45,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/nats-io/gnatsd v1.4.1 // indirect
 	github.com/nats-io/go-nats v1.7.2 // indirect
-	github.com/nats-io/go-nats-streaming v0.4.2 // indirect
+	github.com/nats-io/go-nats-streaming v0.4.2
 	github.com/nats-io/nats-streaming-server v0.12.2
 	github.com/nats-io/nkeys v0.0.2 // indirect
 	github.com/nats-io/nuid v1.0.0 // indirect
@@ -69,6 +69,7 @@ require (
 	golang.org/x/net v0.0.0-20190419010253-1f3472d942ba
 	golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4 // indirect
 	golang.org/x/sys v0.0.0-20190418153312-f0ce4c0180be // indirect
+	golang.org/x/tools v0.0.0-20190418235243-4796d4bd3df0 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect

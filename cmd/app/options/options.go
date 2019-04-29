@@ -191,5 +191,18 @@ func (ing *Indagate) Run(ctx context.Context) (err error) {
 	ing.register.WithLogger(ing.Logger)
 	// TODO: serviceCollector
 
+	// nats streaming for notify
+	ing.natsServer = nats.NewServer()
+	if err := ing.natsServer.Open(); err != nil {
+		ing.Logger.Error("failed to start nats streaming server", zap.Error(err))
+		return err
+	}
+	publisher := nats.NewAsyncPublisher("nats-publisher")
+	// test open
+	if err := publisher.Open(); err != nil {
+		ing.Logger.Error("failed to connect to nats stream server", zap.Error(err))
+		return err
+	}
+
 	return nil
 }

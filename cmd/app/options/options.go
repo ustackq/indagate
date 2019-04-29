@@ -189,5 +189,7 @@ func (ing *Indagate) Run(ctx context.Context) (err error) {
 		metrics.NewIndagateCollector("indagate", info),
 	)
 	ing.register.WithLogger(ing.Logger)
+	// TODO: serviceCollector
+
 	return nil
 }

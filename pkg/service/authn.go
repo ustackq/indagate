@@ -1,6 +1,11 @@
 package service
 
-import "context"
+import (
+	"context"
+	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"time"
+)
 
 // AuthorizationKind is returned by (*Authorization).Kind().
 const AuthorizationKind = "authorization"
@@ -57,4 +62,111 @@ func (auth *Authorization) Identifier() ID {
 
 func (auth *Authorization) GetUserID() ID {
 	return auth.UserID
+}
+
+// InstrumentedAuthorizationService
+type InstrumentedAuthNService struct {
+	requestCount         *prometheus.CounterVec
+	requestDuration      *prometheus.HistogramVec
+	AuthorizationService AuthorizationService
+}
+
+func NewAuthorizationService(a AuthorizationService) *InstrumentedAuthNService {
+	namespace := "auth"
+	subsystem := "prometheus"
+	authn := &InstrumentedAuthNService{
+		requestCount: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Subsystem: subsystem,
+				Name:      "requests_total",
+				Help:      "Num of http requests received",
+			},
+			[]string{"method", "error"},
+		),
+		requestDuration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Namespace: namespace,
+				Subsystem: subsystem,
+				Name:      "request_duration_seconds",
+				Help:      "Time taken to respond to http requests",
+				Buckets:   prometheus.ExponentialBuckets(0.001, 1.5, 25),
+			},
+			[]string{"method", "error"},
+		),
+		AuthorizationService: a,
+	}
+	return authn
+}
+
+func (a *InstrumentedAuthNService) FindAuthorizationByID(ctx context.Context, id ID) (result *Authorization, err error) {
+	defer func(start time.Time) {
+		labels := prometheus.Labels{
+			"method": "FindAuthorizationByID",
+			"error":  fmt.Sprint(err != nil),
+		}
+		a.requestCount.With(labels).Add(1)
+		a.requestDuration.With(labels).Observe(time.Since(start).Seconds())
+	}(time.Now())
+	return a.AuthorizationService.FindAuthorizationByID(ctx, id)
+}
+
+func (a *InstrumentedAuthNService) FindAuthorizationByToken(ctx context.Context, token string) (result *Authorization, err error) {
+	defer func(start time.Time) {
+		labels := prometheus.Labels{
+			"method": "FindAuthorizationByToken",
+			"error":  fmt.Sprint(err != nil),
+		}
+		a.requestCount.With(labels).Add(1)
+		a.requestDuration.With(labels).Observe(time.Since(start).Seconds())
+	}(time.Now())
+	return a.AuthorizationService.FindAuthorizationByToken(ctx, token)
+}
+
+func (a *InstrumentedAuthNService) FindAuthorization(ctx context.Context, filter AuthorizationFilter, opt ...FindOptions) (result []*Authorization, err error) {
+	defer func(start time.Time) {
+		labels := prometheus.Labels{
+			"method": "FindAuthorization",
+			"error":  fmt.Sprint(err != nil),
+		}
+		a.requestCount.With(labels).Add(1)
+		a.requestDuration.With(labels).Observe(time.Since(start).Seconds())
+	}(time.Now())
+	return a.AuthorizationService.FindAuthorization(ctx, filter, opt...)
+}
+
+func (a *InstrumentedAuthNService) CreateAuthorization(ctx context.Context) (result *Authorization, err error) {
+	defer func(start time.Time) {
+		labels := prometheus.Labels{
+			"method": "CreateAuthorization",
+			"error":  fmt.Sprint(err != nil),
+		}
+		a.requestCount.With(labels).Add(1)
+		a.requestDuration.With(labels).Observe(time.Since(start).Seconds())
+	}(time.Now())
+	return a.AuthorizationService.CreateAuthorization(ctx)
+}
+
+func (a *InstrumentedAuthNService) UpdateAuthorization(ctx context.Context, id ID, update *AuthorizationUpdate) (err error) {
+	defer func(start time.Time) {
+		labels := prometheus.Labels{
+			"method": "UpdateAuthorization",
+			"error":  fmt.Sprint(err != nil),
+		}
+		a.requestCount.With(labels).Add(1)
+		a.requestDuration.With(labels).Observe(time.Since(start).Seconds())
+	}(time.Now())
+	return a.UpdateAuthorization(ctx, id, update)
+}
+
+func (a *InstrumentedAuthNService) DeleteAuthorization(ctx context.Context, id ID) (err error) {
+	defer func(start time.Time) {
+		labels := prometheus.Labels{
+			"method": "DeleteAuthorization",
+			"error":  fmt.Sprint(err != nil),
+		}
+		a.requestCount.With(labels).Add(1)
+		a.requestDuration.With(labels).Observe(time.Since(start).Seconds())
+	}(time.Now())
+	return a.AuthorizationService.DeleteAuthorization(ctx, id)
 }

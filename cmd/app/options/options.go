@@ -203,6 +203,9 @@ func (ing *Indagate) Run(ctx context.Context) (err error) {
 		ing.Logger.Error("failed to connect to nats stream server", zap.Error(err))
 		return err
 	}
+	ing.backend = &http.APIBackend{
+		Logger: ing.Logger,
+	}
 
 	return nil
 }

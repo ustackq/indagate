@@ -10,6 +10,8 @@ github.com/armon/go-metrics
 github.com/asaskevich/govalidator
 # github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973
 github.com/beorn7/perks/quantile
+# github.com/coreos/bbolt v1.3.2
+github.com/coreos/bbolt
 # github.com/coreos/go-systemd v0.0.0-20181012123002-c6f51f82210d
 github.com/coreos/go-systemd/daemon
 # github.com/denisenkom/go-mssqldb v0.0.0-20190204142019-df6d76eb9289

@@ -3,6 +3,7 @@ module github.com/ustackq/indagate
 require (
 	cloud.google.com/go v0.36.0 // indirect
 	github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da // indirect
+	github.com/coreos/bbolt v1.3.2
 	github.com/coreos/go-systemd v0.0.0-20181012123002-c6f51f82210d
 	github.com/denisenkom/go-mssqldb v0.0.0-20190204142019-df6d76eb9289
 	github.com/ghodss/yaml v1.0.0

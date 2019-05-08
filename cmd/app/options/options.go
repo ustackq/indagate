@@ -19,6 +19,7 @@ import (
 	"github.com/ustackq/indagate/pkg/logger"
 	"github.com/ustackq/indagate/pkg/metrics"
 	"github.com/ustackq/indagate/pkg/nats"
+	"github.com/ustackq/indagate/pkg/store/bolt"
 	"github.com/ustackq/indagate/pkg/tracing"
 	"github.com/ustackq/indagate/pkg/version"
 )
@@ -33,6 +34,9 @@ type Indagate struct {
 	cancel func()
 	// define testing wether or not
 	testing bool
+	// bolt config
+	boltClient *bolt.Client
+	boltPath   string
 	// storeConfig means the kind of store,now supported:mysql、postsql
 	storeConfig config.Store
 	// secretConfig define the kind of store, now supported:mysql、vault
@@ -207,5 +211,9 @@ func (ing *Indagate) Run(ctx context.Context) (err error) {
 		Logger: ing.Logger,
 	}
 
+	// init store client
+	ing.boltClient = bolt.NewClient()
+	ing.boltClient.Path = ing.boltPath
+	ing.boltClient.WithLogger(ing.Logger.With(zap.String("service", "bbolt")))
 	return nil
 }

@@ -74,3 +74,7 @@ func (client *Client) Close() error {
 func (client *Client) init(ctx context.Context) error {
 	return nil
 }
+
+func (client *Client) WithLogger(logger *zap.Logger) {
+	client.Logger = logger
+}

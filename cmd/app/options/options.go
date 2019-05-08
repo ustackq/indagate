@@ -19,6 +19,7 @@ import (
 	"github.com/ustackq/indagate/pkg/logger"
 	"github.com/ustackq/indagate/pkg/metrics"
 	"github.com/ustackq/indagate/pkg/nats"
+	"github.com/ustackq/indagate/pkg/store"
 	"github.com/ustackq/indagate/pkg/store/bolt"
 	"github.com/ustackq/indagate/pkg/tracing"
 	"github.com/ustackq/indagate/pkg/version"
@@ -34,11 +35,13 @@ type Indagate struct {
 	cancel func()
 	// define testing wether or not
 	testing bool
+	// define store type: means the kind of store,now supported:mysql、postsql
+	storeType string
 	// bolt config
 	boltClient *bolt.Client
 	boltPath   string
 	// storeConfig means the kind of store,now supported:mysql、postsql
-	storeConfig config.Store
+	storeService store.Service
 	// secretConfig define the kind of store, now supported:mysql、vault
 	secretConfig config.Store
 	// tracingType define app tracing type: now supported: opentracing、opencensus
@@ -215,5 +218,20 @@ func (ing *Indagate) Run(ctx context.Context) (err error) {
 	ing.boltClient = bolt.NewClient()
 	ing.boltClient.Path = ing.boltPath
 	ing.boltClient.WithLogger(ing.Logger.With(zap.String("service", "bbolt")))
+
+	// Open bbolt
+	if err := ing.boltClient.Open(ctx); err != nil {
+		ing.Logger.Error("failed open", zap.String("service", "bbolt"), zap.Error(err))
+		return err
+	}
+
+	// config store
+	switch ing.storeType {
+	case store.BblotStore:
+		s := bolt.NewKVStore(ing.boltPath)
+		s.WithDB(ing.boltClient.DB())
+		ing.storeService = store.NewService(s)
+
+	}
 	return nil
 }

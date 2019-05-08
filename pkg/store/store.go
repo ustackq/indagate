@@ -5,6 +5,11 @@ import (
 	"errors"
 )
 
+const (
+	BblotStore string = "bblot"
+	MysqlStore string = "mysql"
+)
+
 var (
 	ErrKeyNotFound   = errors.New("key not found")
 	ErrTxNotWritable = errors.New("transaction is not writebale")

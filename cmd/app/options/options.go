@@ -41,7 +41,7 @@ type Indagate struct {
 	boltClient *bolt.Client
 	boltPath   string
 	// storeConfig means the kind of store,now supported:mysql、postsql
-	storeService store.Service
+	storeService *store.Service
 	// secretConfig define the kind of store, now supported:mysql、vault
 	secretConfig config.Store
 	// tracingType define app tracing type: now supported: opentracing、opencensus
@@ -122,17 +122,8 @@ func (ing *Indagate) Parse(cfg string) {
 		fmt.Fprintln(ing.Stderr, err)
 		os.Exit(1)
 	}
-	configStore, err := config.NewStore(ing.Config, false)
-	if err != nil {
-		fmt.Fprintln(ing.Stderr, err)
-		os.Exit(1)
-	}
-	ing.storeConfig = configStore
-	ing.Logger = log
-}
 
-func (ing *Indagate) Store() config.Store {
-	return ing.storeConfig
+	ing.Logger = log
 }
 
 func (ing *Indagate) SecretStore() config.Store {
@@ -231,7 +222,19 @@ func (ing *Indagate) Run(ctx context.Context) (err error) {
 		s := bolt.NewKVStore(ing.boltPath)
 		s.WithDB(ing.boltClient.DB())
 		ing.storeService = store.NewService(s)
-
+		// TODO: how to testing
+	default:
+		ing.Logger.Error("expected bolt, unknown type", zap.String("store", ing.storeType))
 	}
+
+	// config log
+	ing.storeService.Logger = ing.Logger.With(zap.String("store", ing.storeType))
+	// init store
+	if err := ing.storeService.Init(ctx); err != nil {
+		ing.Logger.Error("failed to init store", zap.Error(err))
+		return err
+	}
+	// registry prometheus metrics
+
 	return nil
 }

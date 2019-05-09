@@ -28,6 +28,18 @@ func (kv *KVStore) WithDB(db *bbolt.DB) {
 
 func (kv *KVStore) View(ctx context.Context, fn func(tx store.Impl) error) error {
 	// TODO: add tracing
+	return kv.db.View(
+		func(tx *bbolt.Tx) error {
+			return fn(&Tx{
+				tx:  tx,
+				ctx: ctx,
+			})
+		},
+	)
+}
+
+func (kv *KVStore) Modify(ctx context.Context, fn func(tx store.Impl) error) error {
+	// TODO: add tracing
 	return kv.db.Update(
 		func(tx *bbolt.Tx) error {
 			return fn(&Tx{

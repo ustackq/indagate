@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"github.com/ustackq/indagate/pkg/service"
 	"github.com/ustackq/indagate/pkg/utils/generator"
 	"go.uber.org/zap"
@@ -25,4 +26,15 @@ func NewService(s Store) *Service {
 		Hash:           &service.BCrypt{},
 		store:          s,
 	}
+}
+
+func (s *Service) Init(ctx context.Context) error {
+
+	return s.store.Modify(ctx, func(tx Impl) error {
+		if err := s.initializeAuth(ctx, tx); err != nil {
+			return err
+		}
+		// TODO: other service
+		return s.initializaUsers(ctx, tx)
+	})
 }

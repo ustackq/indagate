@@ -182,6 +182,7 @@ func (ing *Indagate) Run(ctx context.Context) (err error) {
 
 	// define store type
 	// registry metrics collector: GoCollector, serviceCollector
+	ing.register = metrics.NewRegistry()
 	ing.register.MustRegister(
 		prometheus.NewGoCollector(),
 		metrics.NewIndagateCollector("indagate", info),
@@ -189,6 +190,10 @@ func (ing *Indagate) Run(ctx context.Context) (err error) {
 	ing.register.WithLogger(ing.Logger)
 	// TODO: serviceCollector
 
+	// TODO: add other services
+	var (
+		authSvc service.AuthorizationService = ing.storeService
+	)
 	// nats streaming for notify
 	ing.natsServer = nats.NewServer()
 	if err := ing.natsServer.Open(); err != nil {

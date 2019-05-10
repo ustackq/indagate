@@ -1,5 +1,9 @@
 package errors
 
+import (
+	e "errors"
+)
+
 // Error is indagate struct of error
 type Error struct {
 	Code string
@@ -13,8 +17,14 @@ type Error struct {
 const (
 	NotFound         = "not found"
 	Internal         = "internal error"
+	Invalid          = "invalid"
 	MethodNotAllowed = "method not allowed"
 	Unauthorized     = "unauthorized"
+)
+
+var (
+	ErrKeyNotFound   = e.New("key not found")
+	ErrTxNotWritable = e.New("transaction is not writable")
 )
 
 func (e *Error) Error() string {
@@ -43,4 +53,9 @@ func ErrorCode(err error) string {
 		return ErrorCode(e.Err)
 	}
 	return Internal
+}
+
+// IsNotFound returns a boolean indicating whether the error is known to report that a key or was not found.
+func IsNotFound(err error) bool {
+	return err == ErrKeyNotFound
 }

@@ -14,7 +14,7 @@ const AuthorizationKind = "authorization"
 type Authorization struct {
 	ID         ID           `json:"id"`
 	Token      string       `json:"token"`
-	Active     bool         `json:"active"`
+	Active     Status       `json:"active"`
 	UserID     ID           `json:"userID,omitempty"`
 	Permission []Permission `json:"permissions"`
 }
@@ -49,7 +49,7 @@ func (auth *Authorization) Allowed(p Permission) bool {
 }
 
 func IsActive(auth *Authorization) bool {
-	return auth.Active == true
+	return auth.Active == Active
 }
 
 func (auth *Authorization) Kind() string {

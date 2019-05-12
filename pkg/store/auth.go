@@ -16,7 +16,7 @@ var (
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // assert Service implement service.AuthorizationService
-//var _ service.AuthorizationService = (*Service)(nil)
+var _ service.AuthorizationService = (*Service)(nil)
 
 func (s *Service) initializeAuth(ctx context.Context, tx Impl) error {
 	if _, err := tx.Bucket(authBucket); err != nil {
@@ -106,11 +106,269 @@ func decodeAuthorization(v []byte, auth *service.Authorization) error {
 
 func (s *Service) FindAuthorizationByToken(ctx context.Context, str string) (*service.Authorization, error) {
 	var auth *service.Authorization
-
+	err := s.store.View(ctx, func(tx Impl) error {
+		a, err := s.findAuthorizationByToken(ctx, tx, str)
+		if err != nil {
+			return err
+		}
+		auth = a
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
 	return auth, nil
 }
 
-// TODO
 func (s *Service) findAuthorizationByToken(ctx context.Context, tx Impl, str string) (*service.Authorization, error) {
+	idx, err := authIndexBucket(tx)
+	if err != nil {
+		return nil, err
+	}
 
+	auth, err := idx.Get([]byte(str))
+	if errors.IsNotFound(err) {
+		return nil, &errors.Error{
+			Code: errors.NotFound,
+			Msg:  "authorization not found",
+		}
+	}
+
+	var id service.ID
+	if err := id.Decode(auth); err != nil {
+		return nil, &errors.Error{
+			Code: errors.Invalid,
+			Err:  err,
+		}
+	}
+	return s.findAuthorizationByID(ctx, tx, id)
+}
+
+// FindAuthorization list Authorization filter by arg
+func (s *Service) FindAuthorization(ctx context.Context, filter service.AuthorizationFilter, opt ...service.FindOptions) ([]*service.Authorization, int, error) {
+	if filter.Token != nil {
+		auth, err := s.FindAuthorizationByToken(ctx, *filter.Token)
+		if err != nil {
+			return nil, 0, &errors.Error{
+				Err: err,
+			}
+		}
+		return []*service.Authorization{auth}, 1, nil
+	}
+
+	if filter.ID != nil {
+		auth, err := s.FindAuthorizationByID(ctx, *filter.ID)
+		if err != nil {
+			return nil, 0, &errors.Error{
+				Err: err,
+			}
+		}
+		return []*service.Authorization{auth}, 1, nil
+	}
+
+	auths := []*service.Authorization{}
+	err := s.store.View(ctx, func(tx Impl) error {
+		a, err := s.findAuthorization(ctx, tx, filter)
+		if err != nil {
+			return err
+		}
+		auths = a
+		return nil
+	})
+
+	if err != nil {
+		return nil, 0, &errors.Error{
+			Err: err,
+		}
+	}
+
+	return auths, len(auths), nil
+}
+
+func filterAuthorizationFn(filter service.AuthorizationFilter) func(auth *service.Authorization) bool {
+	if filter.ID != nil {
+		return func(auth *service.Authorization) bool {
+			return auth.ID == *filter.ID
+		}
+	}
+
+	if filter.Token != nil {
+		return func(auth *service.Authorization) bool {
+			return auth.Token == *filter.Token
+		}
+	}
+
+	// compare org and user
+	if filter.OrgID != nil && filter.UserID != nil {
+		return func(auth *service.Authorization) bool {
+			return auth.OrgID == *filter.OrgID && auth.UserID == *filter.UserID
+		}
+	}
+
+	if filter.OrgID != nil {
+		return func(auth *service.Authorization) bool {
+			return auth.OrgID == *filter.OrgID
+		}
+	}
+
+	if filter.UserID != nil {
+		return func(auth *service.Authorization) bool {
+			return auth.UserID == *filter.UserID
+		}
+	}
+
+	return func(auth *service.Authorization) bool { return true }
+}
+
+func (s *Service) findAuthorization(ctx context.Context, tx Impl, f service.AuthorizationFilter) ([]*service.Authorization, error) {
+	if f.User != nil {
+		u, err := s.findUserByName(ctx, tx, *f.User)
+		if err != nil {
+			return nil, err
+		}
+		f.UserID = &u.ID
+	}
+
+	if f.Org != nil {
+		org, err := s.findOrgnizationByName(ctx, tx, *f.Org)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	auths := []*service.Authorization{}
+	filterFn := filterAuthorizationFn(f)
+	err := s.forEachAuthorization(ctx, tx, func(auth *service.Authorization) bool {
+		if filterFn(auth) {
+			auths = append(auths, auth)
+		}
+		return true
+	})
+	if err != nil {
+		return nil, err
+	}
+	return auths, nil
+}
+
+func (s *Service) forEachAuthorization(ctx context.Context, tx Impl, fn func(*service.Authorization) bool) error {
+	b, err := tx.Bucket(authBucket)
+	if err != nil {
+		return err
+	}
+
+	cur, err := b.Cursor()
+	if err != nil {
+		return err
+	}
+
+	for k, v := cur.First(); k != nil; k, v = cur.Next() {
+		auth := &service.Authorization{}
+		if err := json.Unmarshal(k, auth); err != nil {
+			return err
+		}
+		if auth.Active == "" {
+			auth.Active = service.Active
+		}
+		if !fn(auth) {
+			break
+		}
+	}
+	return nil
+}
+
+func (s *Service) CreateAuthorization(ctx context.Context, auth *service.Authorization) error {
+	return s.store.Modify(ctx, func(tx Impl) error {
+		return s.createAuthorization(ctx, tx, auth)
+	})
+}
+
+func (s *Service) uniqueAuthToken(ctx context.Context, tx Impl, auth *service.Authorization) error {
+	err := s.unique(ctx, tx, authIndex, []byte(auth.Token))
+	if err == NotUniqueError {
+		return service.ErrCreateToken
+	}
+	return err
+}
+
+func (s *Service) createAuthorization(ctx context.Context, tx Impl, auth *service.Authorization) error {
+	if err := auth.Valid(); err != nil {
+		return err
+	}
+	if _, err := s.findUserByID(ctx, tx, auth.UserID); err != nil {
+		return err
+	}
+	if _, err := s.findOrgnizationByID(ctx, tx, auth.OrgID); err != nil {
+		return err
+	}
+
+	if err := s.uniqueAuthToken(ctx, tx, auth); err != nil {
+		return err
+	}
+
+	if auth.Token == "" {
+		token, err := s.TokenGenerator.Token()
+		if err != nil {
+			return &errors.Error{
+				Err: err,
+			}
+		}
+		auth.Token = token
+	}
+	auth.ID = s.IDGenerator.ID()
+	if err := s.putAuthorization(ctx, tx, auth); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func encodeAuth(auth *service.Authorization) ([]byte, error) {
+	switch auth.Active {
+	case "":
+		auth.Active = service.Active
+	case service.Active, service.Inactive:
+	default:
+		return nil, &errors.Error{
+			Code: errors.Invalid,
+			Msg:  "unknown auth status",
+		}
+	}
+	return json.Marshal(auth)
+}
+
+func (s *Service) putAuthorization(ctx context.Context, tx Impl, auth *service.Authorization) error {
+	v, err := encodeAuth(auth)
+	if err != nil {
+		// TODO: using fn wrapper
+		return &errors.Error{
+			Code: errors.Invalid,
+			Err:  err,
+		}
+	}
+
+	// encode id
+	encodeID, err := auth.ID.Encode()
+	if err != nil {
+		return errors.NotFoundErr(err)
+	}
+
+	idx, err := authIndexBucket(tx)
+	if err != nil {
+		return err
+	}
+
+	if err := idx.Put([]byte(auth.Token), encodeID); err != nil {
+		return errors.InternalErr(err)
+	}
+
+	b, err := tx.Bucket(authBucket)
+	if err != nil {
+		return err
+	}
+
+	if err := b.Put(encodeID, v); err != nil {
+		return errors.WrapperErr(err)
+	}
+
+	return nil
 }

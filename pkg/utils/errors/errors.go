@@ -20,6 +20,7 @@ const (
 	Invalid          = "invalid"
 	MethodNotAllowed = "method not allowed"
 	Unauthorized     = "unauthorized"
+	Conflict         = "conflict"
 )
 
 var (
@@ -58,4 +59,45 @@ func ErrorCode(err error) string {
 // IsNotFound returns a boolean indicating whether the error is known to report that a key or was not found.
 func IsNotFound(err error) bool {
 	return err == ErrKeyNotFound
+}
+
+func NotFoundErr(err error, msg ...string) error {
+	return &Error{
+		Code: NotFound,
+		Err:  err,
+	}
+}
+
+func InternalErr(err error, msg ...string) error {
+	return &Error{
+		Code: Internal,
+		Err:  err,
+	}
+}
+
+func InvalidErr(err error, msg ...string) error {
+	return &Error{
+		Code: Invalid,
+		Err:  err,
+	}
+}
+
+func UnauthorizedErr(err error, msg ...string) error {
+	return &Error{
+		Code: Unauthorized,
+		Err:  err,
+	}
+}
+
+func ConflictErr(err error, msg ...string) error {
+	return &Error{
+		Code: Conflict,
+		Err:  err,
+	}
+}
+
+func WrapperErr(err error) error {
+	return &Error{
+		Err: err,
+	}
 }

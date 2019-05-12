@@ -4,15 +4,24 @@ import (
 	"context"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/ustackq/indagate/pkg/utils/errors"
 	"time"
 )
 
 // AuthorizationKind is returned by (*Authorization).Kind().
 const AuthorizationKind = "authorization"
 
+var (
+	ErrCreateToken = &errors.Error{
+		Code: errors.Invalid,
+		Msg:  "unable to create token",
+	}
+)
+
 // Authorization define auth object
 type Authorization struct {
 	ID         ID           `json:"id"`
+	OrgID      ID           `json:"org"`
 	Token      string       `json:"token"`
 	Active     Status       `json:"active"`
 	UserID     ID           `json:"userID,omitempty"`
@@ -30,15 +39,19 @@ type AuthorizationService interface {
 	FindAuthorizationByID(ctx context.Context, id ID) (*Authorization, error)
 	FindAuthorizationByToken(ctx context.Context, token string) (*Authorization, error)
 	FindAuthorization(ctx context.Context, filter AuthorizationFilter, opt ...FindOptions) ([]*Authorization, error)
-	CreateAuthorization(ctx context.Context) (*Authorization, error)
+	CreateAuthorization(ctx context.Context, auth *Authorization) error
 	UpdateAuthorization(ctx context.Context, id ID, update *AuthorizationUpdate) error
 	DeleteAuthorization(ctx context.Context, id ID) error
 }
 
 // AuthorizationFilter represent a set of filter that mathch returned results.
 type AuthorizationFilter struct {
-	Token *string
-	ID    *ID
+	Token  *string
+	ID     *ID
+	UserID *ID
+	User   *string
+	OrgID  *ID
+	Org    *string
 }
 
 func (auth *Authorization) Allowed(p Permission) bool {
@@ -46,6 +59,18 @@ func (auth *Authorization) Allowed(p Permission) bool {
 		return false
 	}
 	return PermissionAllowed(p, auth.Permission)
+}
+
+func (auth *Authorization) Valid() error {
+	for _, p := range auth.Permission {
+		if p.Resource.OrgID != nil && *p.Resource.OrgID != auth.OrgID {
+			return &errors.Error{
+				Msg:  fmt.Sprintf("permission %s is not matcher with org id %s", p, auth.OrgID),
+				Code: errors.Invalid,
+			}
+		}
+	}
+	return nil
 }
 
 func IsActive(auth *Authorization) bool {
@@ -135,7 +160,7 @@ func (a *InstrumentedAuthNService) FindAuthorization(ctx context.Context, filter
 	return a.AuthorizationService.FindAuthorization(ctx, filter, opt...)
 }
 
-func (a *InstrumentedAuthNService) CreateAuthorization(ctx context.Context) (result *Authorization, err error) {
+func (a *InstrumentedAuthNService) CreateAuthorization(ctx context.Context, auth *Authorization) (err error) {
 	defer func(start time.Time) {
 		labels := prometheus.Labels{
 			"method": "CreateAuthorization",
@@ -144,7 +169,7 @@ func (a *InstrumentedAuthNService) CreateAuthorization(ctx context.Context) (res
 		a.requestCount.With(labels).Add(1)
 		a.requestDuration.With(labels).Observe(time.Since(start).Seconds())
 	}(time.Now())
-	return a.AuthorizationService.CreateAuthorization(ctx)
+	return a.AuthorizationService.CreateAuthorization(ctx, auth)
 }
 
 func (a *InstrumentedAuthNService) UpdateAuthorization(ctx context.Context, id ID, update *AuthorizationUpdate) (err error) {

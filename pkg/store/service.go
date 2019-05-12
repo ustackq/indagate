@@ -12,7 +12,7 @@ type Service struct {
 	store          Store
 	Logger         *zap.Logger
 	Hash           *service.BCrypt
-	IDGenerator    generator.IDGenerator
+	IDGenerator    service.IDGenerator
 	TokenGenerator generator.TokenGenerator
 	time           func() time.Time
 }

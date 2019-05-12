@@ -15,8 +15,9 @@ type ResourceType string
 
 // Resource is an authorizable resource.
 type Resource struct {
-	Type ResourceType `json:"type"`
-	ID   *ID          `json:"id,omitempty"`
+	Type  ResourceType `json:"type"`
+	ID    *ID          `json:"id,omitempty"`
+	OrgID *ID          `json:"org,omitempty"`
 }
 
 // Permission defines an action and resource relactionship.

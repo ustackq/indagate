@@ -20,12 +20,13 @@ var (
 
 // Authorization define auth object
 type Authorization struct {
-	ID         ID           `json:"id"`
-	OrgID      ID           `json:"org"`
-	Token      string       `json:"token"`
-	Active     Status       `json:"active"`
-	UserID     ID           `json:"userID,omitempty"`
-	Permission []Permission `json:"permissions"`
+	ID          ID           `json:"id"`
+	OrgID       ID           `json:"org"`
+	Token       string       `json:"token"`
+	Active      Status       `json:"active"`
+	UserID      ID           `json:"userID,omitempty"`
+	Permission  []Permission `json:"permissions"`
+	Description string       `json:"description,omitempty"`
 }
 
 // AuthorizationUpdate define update object
@@ -38,7 +39,7 @@ type AuthorizationUpdate struct {
 type AuthorizationService interface {
 	FindAuthorizationByID(ctx context.Context, id ID) (*Authorization, error)
 	FindAuthorizationByToken(ctx context.Context, token string) (*Authorization, error)
-	FindAuthorization(ctx context.Context, filter AuthorizationFilter, opt ...FindOptions) ([]*Authorization, error)
+	FindAuthorization(ctx context.Context, filter AuthorizationFilter, opt ...FindOptions) ([]*Authorization, int, error)
 	CreateAuthorization(ctx context.Context, auth *Authorization) error
 	UpdateAuthorization(ctx context.Context, id ID, update *AuthorizationUpdate) error
 	DeleteAuthorization(ctx context.Context, id ID) error
@@ -148,7 +149,7 @@ func (a *InstrumentedAuthNService) FindAuthorizationByToken(ctx context.Context,
 	return a.AuthorizationService.FindAuthorizationByToken(ctx, token)
 }
 
-func (a *InstrumentedAuthNService) FindAuthorization(ctx context.Context, filter AuthorizationFilter, opt ...FindOptions) (result []*Authorization, err error) {
+func (a *InstrumentedAuthNService) FindAuthorization(ctx context.Context, filter AuthorizationFilter, opt ...FindOptions) (result []*Authorization, n int, err error) {
 	defer func(start time.Time) {
 		labels := prometheus.Labels{
 			"method": "FindAuthorization",

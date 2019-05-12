@@ -19,10 +19,12 @@ import (
 	"github.com/ustackq/indagate/pkg/logger"
 	"github.com/ustackq/indagate/pkg/metrics"
 	"github.com/ustackq/indagate/pkg/nats"
+	"github.com/ustackq/indagate/pkg/service"
 	"github.com/ustackq/indagate/pkg/store"
 	"github.com/ustackq/indagate/pkg/store/bolt"
 	"github.com/ustackq/indagate/pkg/tracing"
 	"github.com/ustackq/indagate/pkg/version"
+	"github.com/ustackq/indagate/routes"
 )
 
 // Indagate contains configuration flags for the Indagate.
@@ -192,7 +194,7 @@ func (ing *Indagate) Run(ctx context.Context) (err error) {
 
 	// TODO: add other services
 	var (
-		authSvc service.AuthorizationService = ing.storeService
+		auth service.AuthorizationService = ing.storeService
 	)
 	// nats streaming for notify
 	ing.natsServer = nats.NewServer()
@@ -241,5 +243,14 @@ func (ing *Indagate) Run(ctx context.Context) (err error) {
 	}
 	// registry prometheus metrics
 
+	// build backend
+	ing.backend = &http.APIBackend{
+		Logger:                ing.Logger,
+		AuthenticationService: auth,
+	}
+
+	// http logger
+	httpLogger := ing.Logger.With(zap.String("service", "http"))
+	platformHandler := routes.PlatformHandler(ing.backend)
 	return nil
 }

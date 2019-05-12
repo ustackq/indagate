@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/coreos/bbolt"
+	"github.com/ustackq/indagate/pkg/service"
 	"github.com/ustackq/indagate/pkg/utils/generator"
 )
 
@@ -17,7 +18,7 @@ type Client struct {
 	db     *bbolt.DB
 	Logger *zap.Logger
 
-	IDGenerator    generator.IDGenerator
+	IDGenerator    service.IDGenerator
 	TokenGenerator generator.TokenGenerator
 	time           func() time.Time
 }

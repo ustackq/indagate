@@ -234,6 +234,7 @@ func (s *Service) findAuthorization(ctx context.Context, tx Impl, f service.Auth
 		if err != nil {
 			return nil, err
 		}
+		f.OrgID = &org.ID
 	}
 
 	auths := []*service.Authorization{}
@@ -263,7 +264,7 @@ func (s *Service) forEachAuthorization(ctx context.Context, tx Impl, fn func(*se
 
 	for k, v := cur.First(); k != nil; k, v = cur.Next() {
 		auth := &service.Authorization{}
-		if err := json.Unmarshal(k, auth); err != nil {
+		if err := json.Unmarshal(v, auth); err != nil {
 			return err
 		}
 		if auth.Active == "" {
@@ -370,5 +371,81 @@ func (s *Service) putAuthorization(ctx context.Context, tx Impl, auth *service.A
 		return errors.WrapperErr(err)
 	}
 
+	return nil
+}
+
+func (s *Service) DeleteAuthorization(ctx context.Context, id service.ID) error {
+	return s.store.Modify(ctx, func(tx Impl) error {
+		return s.deleteAuthorization(ctx, tx, id)
+	})
+}
+
+func (s *Service) deleteAuthorization(ctx context.Context, tx Impl, id service.ID) error {
+	auth, err := s.findAuthorizationByID(ctx, tx, id)
+	if err != nil {
+		return err
+	}
+
+	idx, err := authIndexBucket(tx)
+	if err != nil {
+		return err
+	}
+
+	if err := idx.Delete([]byte(auth.Token)); err != nil {
+		return errors.WrapperErr(err)
+	}
+
+	encodeID, err := id.Encode()
+	if err != nil {
+		return errors.WrapperErr(err)
+	}
+
+	b, err := tx.Bucket(authBucket)
+	if err != nil {
+		return err
+	}
+
+	if err := b.Delete(encodeID); err != nil {
+		return errors.WrapperErr(err)
+	}
+	return nil
+}
+
+func (s *Service) UpdateAuthorization(ctx context.Context, id service.ID, update *service.AuthorizationUpdate) error {
+	return s.store.Modify(ctx, func(tx Impl) error {
+		return s.updateAuthorization(ctx, tx, id, update)
+	})
+}
+
+func (s *Service) updateAuthorization(ctx context.Context, tx Impl, id service.ID, update *service.AuthorizationUpdate) error {
+	auth, err := s.findAuthorizationByID(ctx, tx, id)
+	if err != nil {
+		return err
+	}
+	if update.Status != nil {
+		auth.Active = *update.Status
+	}
+	if update.Description != nil {
+		auth.Description = *update.Description
+	}
+
+	v, err := encodeAuth(auth)
+	if err != nil {
+		return err
+	}
+
+	encodeID, err := id.Encode()
+	if err != nil {
+		return errors.WrapperErr(err)
+	}
+
+	b, err := tx.Bucket(authBucket)
+	if err != nil {
+		return err
+	}
+
+	if err := b.Put(encodeID, v); err != nil {
+		return errors.WrapperErr(err)
+	}
 	return nil
 }

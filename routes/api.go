@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/prometheus/client_golang/prometheus"
 	ihttp "github.com/ustackq/indagate/pkg/http"
 )
 
@@ -38,4 +39,9 @@ func (ph *PlatformHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	ph.APIHandler.ServeHTTP(rw, r)
 	return
+}
+
+func (ph *PlatformHandler) PrometheusCollector() []prometheus.Collector {
+	// registry relevant metrics
+	return nil
 }

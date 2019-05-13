@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	nethttp "net/http"
 	"os"
 	"sync"
@@ -19,6 +20,7 @@ import (
 	"github.com/ustackq/indagate/pkg/logger"
 	"github.com/ustackq/indagate/pkg/metrics"
 	"github.com/ustackq/indagate/pkg/nats"
+	"github.com/ustackq/indagate/pkg/server"
 	"github.com/ustackq/indagate/pkg/service"
 	"github.com/ustackq/indagate/pkg/store"
 	"github.com/ustackq/indagate/pkg/store/bolt"
@@ -63,7 +65,7 @@ type Indagate struct {
 	Stderr      io.Writer
 	httpAddress struct {
 		addr string
-		port string
+		port int
 	}
 	register *metrics.Registry
 	server   nethttp.Server
@@ -251,6 +253,37 @@ func (ing *Indagate) Run(ctx context.Context) (err error) {
 
 	// http logger
 	httpLogger := ing.Logger.With(zap.String("service", "http"))
-	platformHandler := routes.PlatformHandler(ing.backend)
+	platformHandler := routes.NewPlatformHandler(ing.backend)
+	ing.register.MustRegister(platformHandler.PrometheusCollector()...)
+
+	handler := http.NewHandlerWithRegistry("platform", ing.register)
+	handler.Handler = platformHandler
+	handler.Logger = httpLogger
+
+	ing.server.Handler = handler
+	// TODO: consider how to test server
+
+	ls, err := net.Listen("tcp", ing.httpAddress.addr)
+	if err != nil {
+		httpLogger.Error("failed to listener ", zap.String("port", ing.httpAddress.addr), zap.Error(err))
+		httpLogger.Info("Stoppping")
+		return err
+	}
+
+	if addr, ok := ls.Addr().(*net.TCPAddr); ok {
+		ing.httpAddress.port = addr.Port
+	}
+
+	ing.wg.Add(1)
+	go func(logger *zap.Logger) {
+		defer ing.wg.Done()
+
+		logger.Info("Listening", zap.String("transport", "http"), zap.String("addr", ing.httpAddress.addr), zap.Int("port", ing.httpAddress.port))
+		if err := server.LinstenAndServe(ing.httpAddress.addr, ing.server.Handler, logger); err != nil {
+			logger.Error("failed start http service", zap.Error(err))
+		}
+		logger.Info("Stoppping")
+
+	}(httpLogger)
 	return nil
 }

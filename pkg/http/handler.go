@@ -5,6 +5,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"net/http"
+	"strings"
 
 	"github.com/ustackq/indagate/pkg/metrics"
 )
@@ -89,5 +90,23 @@ func (h *Handler) initMetrics() {
 
 // ServerHTTP implement Handler interface
 func (h *Handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	// TODO
+	// TODO tracing
+	userAgent := r.Header.Get("User-Agent")
+	if userAgent == "" {
+		userAgent = "UNKNOWN"
+	}
+
+	// TODO: how apiserver and influxdb to handle metrics
+
+	switch {
+	case r.URL.Path == MetricsPath:
+		h.MetricsHandler.ServeHTTP(rw, r)
+	case r.URL.Path == StatusPath:
+		h.StatusHandler.ServeHTTP(rw, r)
+	case strings.HasPrefix(r.URL.Path, DebugPath):
+		h.DebugPath.ServeHTTP(rw, r)
+	default:
+		h.Handler.ServeHTTP(rw, r)
+	}
+
 }

@@ -54,5 +54,6 @@
 	"go.useLanguageServer": false,
 	"editor.minimap.maxColumn": 520,
 	"go.docsTool": "gogetdoc",
-	"go.autocompleteUnimportedPackages": true
+	"go.autocompleteUnimportedPackages": true,
+	"git.ignoreLimitWarning": true
 }

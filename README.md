@@ -22,9 +22,32 @@ See the architecture below:
 
 
 
-### Install
+### Library
 
-buger/jsonparser
+#### Microservices standard library
+
+- [go-kit/kit](https://github.com/go-kit/kit)
+
+#### Logging
+
+- [uber-go/zap](https://github.com/uber-go/zap)
+
+#### Store
+
+- [etcd-io/bblot](https://github.com/etcd-io/bbolt)
+
+#### Auth
+
+- [jwt](https://github.com/dgrijalva/jwt-go)
+
+#### Monitoring
+
+- [prometheus](https://github.com/prometheus/prometheus)
+
+#### Tracing
+
+- [opencensus](https://github.com/census-instrumentation/opencensus-go)
+
 
 ## Documentation
 

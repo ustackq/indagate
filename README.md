@@ -1,73 +1,47 @@
-# Indagate
-
-Indagate is a fully opensoure product, which construct on mircoservices but has an opinion on the best way to hold webcast. This project not only helps you build a public discuz which has supported  automation install ,but It also provide admin to manage and troubleshoot them.
-
-Goals of the project:
-
-- Install automation
-- Secure by default (uses TLS, RBAC by default, OIDC AuthN, etcd、AMI)
-- Web discuz
-- Run on such OS: Centos, Ubuntu
-- k8s supported
-
-## Getting Started
-
-**To use a tested release** on a supported platform, follow the links below.
-
-**To hack or modify** the templates or add a new platform, use the scripts in this repo to boot and tear down clusters.
-
-### Architecture overview
-![](dcos/architecture.png)
-See the architecture below:
+#  Indagate 问答系统简介
 
 
 
-### Library
+---
 
-#### Microservices standard library
-
-- [go-kit/kit](https://github.com/go-kit/kit)
-
-#### Logging
-
-- [uber-go/zap](https://github.com/uber-go/zap)
-
-#### Store
-
-- [etcd-io/bblot](https://github.com/etcd-io/bbolt)
-
-#### Auth
-
-- [jwt](https://github.com/dgrijalva/jwt-go)
-
-#### Monitoring
-
-- [prometheus](https://github.com/prometheus/prometheus)
-
-#### Tracing
-
-- [opencensus](https://github.com/census-instrumentation/opencensus-go)
+Indagate 问答系统是一套开源的社交化问答软件系统。作为国内首个推出基于 Goalng微服务化的社交化问答系统，Indagate 期望能够给更多的站长或者企业提供一套完整的社交问答系统，帮助社区或者企业搭建相关的知识库建设。
 
 
-## Documentation
+### Indagate 问答系统的下载
 
-Dashboard documentation can be found on [Wiki](https://github.com/ustackq/indagate/wiki) pages, it includes:
+您可以随时从我们的官方下载站下载到最新版本，以及各种补丁
 
-* Common: Entry-level overview
+[http://github.com/ustackq/indagate/release][1]
 
-* Install Guide: [Installation](https://github.com/ustackq/indagate/docs/Installation), [Istaller Dashboard](
-https://github.com/ustackq/yunus/docs/Accessing-dashboard) and more for users
+### Indagate 问答系统的环境需求
 
-* Manager Guide: [Management](https://github.com/ustackq/indagate/docs/management), [Management Dashboard](
-https://github.com/ustackq/indagate/docs/Accessing-dashboard) and more for users
+ 1. 安装docker
+ 2. 可用的 www 服务器，如 Apache、IIS、nginx, 推荐使用性能高效的 Apache 或 nginx.
+ 3. MySQL 5.0 及以上, 服务器需要支持 MySQLi 或 PDO_MySQL
+ 
 
-* Developer Guide: [Getting Started](https://github.com/ustackq/indagate/docs/Getting-started), [Dependency
-Management](https://github.com/ustackq/indagate/docs/Dependency-management) and more for anyone interested in contributing
+### Indagate 问答系统的安装
 
-## License
+ 1. 上传 upload 目录中的文件到服务器
+ 2. 设置目录属性（windows 服务器可忽略这一步）
+以下这些目录需要可读写权限
+> ./
+./system
+./system/config 含子目录
 
-The work done has been licensed under Apache License 2.0. The license file can be found [here](LICENSE). You can find
-out more about the license at [www.apache.org/licenses/LICENSE-2.0](//www.apache.org/licenses/LICENSE-2.0).
+ 3. 访问站点开始安装
+ 4. 参照页面提示，进行安装，直至安装完毕
 
 
+### Indagate 问答系统的升级
 
+升级过程非常简单, 覆盖所有文件之后运行 http://您的域名/upgrade/ 按照提示操作即可
+
+
+### Indagate 软件的技术支持
+
+当您在安装、升级、日常使用当中遇到疑难，请您到以下站点获取技术支持。
+
+ - 支持：http://www.ustack.io/support/
+
+[1]: http://github.com/ustackq/indagate/release

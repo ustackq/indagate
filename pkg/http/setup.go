@@ -21,7 +21,7 @@ import (
 // join to a current cluster.
 
 const (
-	setupPath = "/api/v1/install"
+	setupPath = "/api/v1/setup"
 )
 
 // SetupBackend define installer service
@@ -52,14 +52,14 @@ func NewSetupHandler(stb *SetupBackend) *SetupHandler {
 		Logger:       stb.Logger,
 		SetupService: stb.SetupService,
 	}
-	sh.HandlerFunc("POST", setupPath, sh.Install)
-	sh.HandlerFunc("GET", setupPath, sh.isInstalling)
+	sh.POST(setupPath, sh.Setup)
+	sh.GET(setupPath, sh.isInstalling)
 
 	return sh
 }
 
 // isInstalling handler check wether install
-func (sh *SetupHandler) isInstalling(rw http.ResponseWriter, r *http.Request) {
+func (sh *SetupHandler) isInstalling(rw http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctx := r.Context()
 	result, err := sh.SetupService.IsInstalling(ctx)
 	if err != nil {
@@ -72,8 +72,32 @@ func (sh *SetupHandler) isInstalling(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type setupResponse struct {
+	User         *userResponse `json:"user"`
+	Organization *orgResponse  `json:"org"`
+	Auth         *authResponse `json:"auth"`
+}
+
+func newSetupResponse(results *service.SetupResult) *setupResponse {
+	ps := make([]permissionResponse, len(results.Auth.Permissions))
+	for i, p := range results.Auth.Permissions {
+		ps[i] = permissionResponse{
+			Action: p.Action,
+			Resource: resourceResponse{
+				Resource: p.Resource,
+			},
+		}
+	}
+
+	return &setupResponse{
+		User:         newUserResponse(results.User),
+		Organization: newOrgResponse(results.Org),
+		Auth:         newAuthResponse(results.Auth, results.Org, results.User, ps),
+	}
+}
+
 // Install handle indagate install
-func (sh *SetupHandler) Install(rw http.ResponseWriter, r *http.Request) {
+func (sh *SetupHandler) Setup(rw http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ctx := r.Context()
 	req, err := decodeSetupRequest(ctx, r)
 	if err != nil {
@@ -85,7 +109,7 @@ func (sh *SetupHandler) Install(rw http.ResponseWriter, r *http.Request) {
 		EncodeError(ctx, err, rw)
 		return
 	}
-	if err := encodeResponse(ctx, rw, http.StatusCreated, results); err != nil {
+	if err := encodeResponse(ctx, rw, http.StatusCreated, newSetupResponse(results)); err != nil {
 		LogEncodeError(sh.Logger, r, err)
 		return
 	}
@@ -112,7 +136,7 @@ func (ss *setupService) IsInstalling(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (ss *setupService) Setup(ctx context.Context, req *service.SetupRequest) (*service.SetupResponse, error) {
+func (ss *setupService) Setup(ctx context.Context, req *service.SetupRequest) (*service.SetupResult, error) {
 	// check connection,if not, checkout config and build connection
 	// checkout table paremethes.Installed == true
 	// if not, initial database and others

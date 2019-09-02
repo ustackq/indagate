@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -23,4 +24,11 @@ func (b *BCrypt) GenerateFromPassword(password []byte, cost int) ([]byte, error)
 		cost = bcrypt.DefaultCost
 	}
 	return bcrypt.GenerateFromPassword(password, cost)
+}
+
+// PasswordsService define the basic service for managing basic auth.
+type PasswordsService interface {
+	SetPassword(ctx context.Context, name, paasword string) error
+	ComparePassword(ctx context.Context, name, password string) error
+	CompareAndSetPassword(ctx context.Context, name, old, new string) error
 }

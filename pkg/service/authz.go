@@ -1,5 +1,7 @@
 package service
 
+import "github.com/ustackq/indagate/pkg/utils/errors"
+
 // Action is an enum defining all possible resource operation.
 type Action string
 
@@ -8,6 +10,23 @@ const (
 	WriteAction     Action = "WRITE"     //2
 	READWRITEACTION Action = "READWRITE" //3
 
+)
+
+const (
+	// BucketsResourceType gives permissions to one or more buckets.
+	BucketsResourceType = ResourceType("buckets") // 1
+
+	// OrgsResourceType gives permissions to one or more orgs.
+	OrgsResourceType = ResourceType("orgs") // 3
+	// UsersResourceType gives permissions to one or more users.
+	UsersResourceType = ResourceType("users") // 7
+)
+
+var (
+	ErrUnableCreateToken = &errors.Error{
+		Msg:  "unable to create token",
+		Code: errors.Invalid,
+	}
 )
 
 // ResourceType is an enum defining all resource types that have a permission model in indagate.
@@ -26,7 +45,48 @@ type Permission struct {
 	Resource Resource `json:"resource"`
 }
 
-func PermissionAllowed(p Permission, ps []Permission) bool {
+func NewPermissionAtID(id ID, action Action, rt ResourceType, orgID ID) (*Permission, error) {
+	p := &Permission{
+		Action: action,
+		Resource: Resource{
+			Type:  rt,
+			ID:    &id,
+			OrgID: &orgID,
+		},
+	}
+	return p, p.Valid()
+}
+
+// NewPermission returns a permission with provided arguments.
+func NewPermission(a Action, rt ResourceType, orgID ID) (*Permission, error) {
+	p := &Permission{
+		Action: a,
+		Resource: Resource{
+			Type:  rt,
+			OrgID: &orgID,
+		},
+	}
+
+	return p, p.Valid()
+}
+
+// NewGlobalPermission constructs a global permission capable of accessing any resource of type rt.
+func NewGlobalPermission(a Action, rt ResourceType) (*Permission, error) {
+	p := &Permission{
+		Action: a,
+		Resource: Resource{
+			Type: rt,
+		},
+	}
+	return p, p.Valid()
+}
+
+func (p *Permission) Valid() error {
+
+	return nil
+}
+
+func PermissionAllowed(p Permission, ps []*Permission) bool {
 	return true
 }
 

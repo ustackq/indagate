@@ -6,10 +6,24 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/ustackq/indagate/pkg/utils/errors"
 	"time"
+
+	jsoniter "github.com/json-iterator/go"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // AuthorizationKind is returned by (*Authorization).Kind().
 const AuthorizationKind = "authorization"
+
+// auth service op
+const (
+	OpFindAuthorizationByID    = "FindAuthorizationByID"
+	OpFindAuthorizationByToken = "FindAuthorizationByToken"
+	OpFindAuthorizations       = "FindAuthorizations"
+	OpCreateAuthorization      = "CreateAuthorization"
+	OpUpdateAuthorization      = "UpdateAuthorization"
+	OpDeleteAuthorization      = "DeleteAuthorization"
+)
 
 var (
 	ErrCreateToken = &errors.Error{
@@ -20,13 +34,13 @@ var (
 
 // Authorization define auth object
 type Authorization struct {
-	ID          ID           `json:"id"`
-	OrgID       ID           `json:"org"`
-	Token       string       `json:"token"`
-	Active      Status       `json:"active"`
-	UserID      ID           `json:"userID,omitempty"`
-	Permission  []Permission `json:"permissions"`
-	Description string       `json:"description,omitempty"`
+	ID          ID            `json:"id"`
+	OrgID       ID            `json:"org"`
+	Token       string        `json:"token"`
+	UserID      ID            `json:"userID,omitempty"`
+	Permissions []*Permission `json:"permissions"`
+	Description string        `json:"description,omitempty"`
+	Status      Status        `json:"active"`
 }
 
 // AuthorizationUpdate define update object
@@ -41,7 +55,7 @@ type AuthorizationService interface {
 	FindAuthorizationByToken(ctx context.Context, token string) (*Authorization, error)
 	FindAuthorization(ctx context.Context, filter AuthorizationFilter, opt ...FindOptions) ([]*Authorization, int, error)
 	CreateAuthorization(ctx context.Context, auth *Authorization) error
-	UpdateAuthorization(ctx context.Context, id ID, update *AuthorizationUpdate) error
+	UpdateAuthorization(ctx context.Context, id ID, update *AuthorizationUpdate) (*Authorization, error)
 	DeleteAuthorization(ctx context.Context, id ID) error
 }
 
@@ -59,11 +73,11 @@ func (auth *Authorization) Allowed(p Permission) bool {
 	if !IsActive(auth) {
 		return false
 	}
-	return PermissionAllowed(p, auth.Permission)
+	return PermissionAllowed(p, auth.Permissions)
 }
 
 func (auth *Authorization) Valid() error {
-	for _, p := range auth.Permission {
+	for _, p := range auth.Permissions {
 		if p.Resource.OrgID != nil && *p.Resource.OrgID != auth.OrgID {
 			return &errors.Error{
 				Msg:  fmt.Sprintf("permission %s is not matcher with org id %s", p, auth.OrgID),
@@ -75,7 +89,7 @@ func (auth *Authorization) Valid() error {
 }
 
 func IsActive(auth *Authorization) bool {
-	return auth.Active == Active
+	return auth.Status == Active
 }
 
 func (auth *Authorization) Kind() string {

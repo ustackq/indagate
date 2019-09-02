@@ -33,9 +33,15 @@ func SetToken(r *http.Request, token string) {
 }
 
 func ProbeAuthScheme(r *http.Request) (string, error) {
-	_, err := GetToken(r)
-	if err != nil {
-		return "", errors.New("token required")
+	_, terr := GetToken(r)
+	_, serr := decodeCookieSession(r.Context(), r)
+	if terr != nil && serr != nil {
+		return "", errors.New("token or session required ")
 	}
+
+	if terr == nil {
+		return tokenAuthScheme, nil
+	}
+
 	return tokenAuthScheme, nil
 }

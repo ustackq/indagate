@@ -8,14 +8,21 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/coreos/bbolt"
 	"github.com/ustackq/indagate/pkg/service"
 	"github.com/ustackq/indagate/pkg/utils/generator"
+	bolt "go.etcd.io/bbolt"
 )
+
+// OpPrefix is the prefix for bolt ops
+const OpPrefix = "bolt/"
+
+func getOp(op string) string {
+	return OpPrefix + op
+}
 
 type Client struct {
 	Path   string
-	db     *bbolt.DB
+	db     *bolt.DB
 	Logger *zap.Logger
 
 	IDGenerator    service.IDGenerator
@@ -32,7 +39,7 @@ func NewClient() *Client {
 	}
 }
 
-func (client *Client) DB() *bbolt.DB {
+func (client *Client) DB() *bolt.DB {
 	return client.db
 }
 
@@ -50,7 +57,7 @@ func (client *Client) Open(ctx context.Context) error {
 		return err
 	}
 
-	db, err := bbolt.Open(client.Path, 0700, &bbolt.Options{Timeout: 2 * time.Second})
+	db, err := bolt.Open(client.Path, 0700, &bolt.Options{Timeout: 2 * time.Second})
 	if err != nil {
 		return fmt.Errorf("unable to open boltdb: %v", err)
 	}

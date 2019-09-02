@@ -8,12 +8,12 @@ import (
 )
 
 var (
-	orgBucket = []byte("orgv1alpha1")
-	orgIndex  = []byte("orgIndexv1alpha1")
+	OrgBucket = []byte("orgv1alpha1")
+	OrgIndex  = []byte("orgIndexv1alpha1")
 )
 
 func (s *Service) findOrgnizationByName(ctx context.Context, tx Impl, str string) (*service.Organization, error) {
-	b, err := tx.Bucket(orgBucket)
+	b, err := tx.Bucket(OrgBucket)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (s *Service) findOrgnizationByID(ctx context.Context, tx Impl, id service.I
 		}
 	}
 
-	b, err := tx.Bucket(orgBucket)
+	b, err := tx.Bucket(OrgBucket)
 	if err != nil {
 		return nil, err
 	}

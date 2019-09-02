@@ -1,30 +1,25 @@
 package models
 
 import (
-	"os"
-	"time"
-	"fmt"
 	"bytes"
-	"strings"
-	"image"
-	"image/png"
-	"path/filepath"
-	"encoding/hex"
 	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/hex"
+	"fmt"
+	"image"
+	"image/png"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 	"unicode/utf8"
 
-	"github.com/golang/glog"
-	"golang.org/x/crypto/pbkdf2"
-	"github.com/nfnt/resize"
 	"github.com/go-xorm/xorm"
-	"github.com/ustack/Yunus/src/app/backend/pkg/setting"
-	"github.com/ustack/Yunus/src/app/backend/pkg/account"
-	"github.com/ustack/Yunus/src/app/backend/pkg/utils"
-	"github.com/ustack/Yunus/src/app/backend/pkg/utils/convert"
-	"github.com/ustack/Yunus/src/app/backend/pkg/avatar"
-	"github.com/ustack/Yunus/src/app/backend/errors"
-	)
+	"github.com/golang/glog"
+	"github.com/nfnt/resize"
+
+	"golang.org/x/crypto/pbkdf2"
+)
 
 var (
 	reservedUsernames    = []string{"assets", "css", "img", "js", "less", "plugins", "debug", "raw", "install", "api", "avatar", "user", "org", "help", "stars", "issues", "pulls", "commits", "repo", "template", "admin", "new", ".", ".."}
@@ -32,276 +27,283 @@ var (
 )
 
 type ActiveData struct {
-	ID int64
-	UID int64
+	ID             int64
+	UID            int64
 	ExpireTimeUnix int64
-	ActiveCode int64
+	ActiveCode     int64
 	ActiveTypeCode int
-	AddTimeUnix int64
-	ADDIP string
+	AddTimeUnix    int64
+	ADDIP          string
 	ActiveTimeUnix int64
-	ActiveIP string
+	ActiveIP       string
 }
-// User universal definition
+
+// User universal definition, which represents the object of system and member belong other group.
 type User struct {
-	ID                   int64
-	UserName             string `xorm:"UNIQUE NOT NULL"`
-	Email                string `xorm:"UNIQUE NOT NULL"`
-	Mobile               string `xorm:"UNIQUE NOT NULL"`
-	Passwd               string
-	Salt                 string `xorm:"VARCHAR(10)"`
-	AvatarFile           string `xorm:"VARCHAR(2048) NOT NULL"`
+	ID                   int64  // NOT NULL AUTO_INCREMENT TYPE: NOT NULL
+	UserName             string `xorm:"INDEX UNIQUE"`           // DEFAULT NULL TYPE: VARCHAR(255)
+	Email                string `xorm:"INDEX NOT NULL"`         // DEFAULT NULL TYPE: VARCHAR(255)
+	Mobile               string `xorm:"UNIQUE"`                 // DEFAULT NULL TYPE: VARCHAR(255)
+	Password             string `xorm:"NOT NULL"`               // DEFAULT NULL TYPE: VARCHAR(255)
+	Salt                 string `xorm:"VARCHAR(10)"`            // DEFAULT NULL TYPE: VARCHAR(10)
+	AvatarFile           string `xorm:"VARCHAR(2048) NOT NULL"` // DEFAULT NULL TYPE: VARCHAR(2048)
 	Sex                  bool
-	Birthday             string
-	Province             string
-	City                 string
-	JobID                int64
-	RegTime              time.Time
-	RegIP                string
-	LastLogin            time.Time
-	LastIP               string
-	OnlineTime           time.Time
-	LastActive           time.Time
-	Integral             int32
+	Birthday             string    `xorm:"VARCHAR(10)"`
+	Province             string    `xorm:"VARCHAR(64)"`
+	City                 string    `xorm:"VARCHAR(64)"`
+	JobID                int64     `xorm:"DEFAULT 0"`
+	RegTime              time.Time `xorm:"-" json:"-"`
+	RegUnix              int64
+	RegIP                string    `xorm:"VARCHAR(64)"`
+	LastLogin            time.Time `xorm:"-" json:"-"`
+	LastLoginUnix        int64
+	LastIP               string    `xorm:"VARCHAR(64)"`
+	OnlineTime           time.Time `xorm:"-" json:"-"`
+	OnlineUnix           int64
+	LastActive           time.Time `xorm:"-" json:"-"`
+	LastActiveUnix       int64     `xorm:"INDEX"`
 	NotificationUnread   int32
 	InboxUnread          int32
 	InboxRecv            int32
 	FansCount            int32
 	FriendCount          int32
-	BeInvitedCount       int32
+	InviteCount          int32
 	ArticleCount         int32
 	QuestionCount        int32
-	AnswerCount          int32
+	AnswerCount          int32 `xorm:"INDEX"`
 	TopicFocusCount      int32
-	InvitedCount         int32
-	GroupID              int32
+	InvitationAvailable  int32
+	GroupID              int32 `xorm:"INDEX"`
 	ReputationGroup      int32
-	Forbidden            bool
-	ValidEmail           bool
+	Forbidden            bool `xorm:"INDEX"`
+	ValidEmail           bool `xorm:"INDEX"`
 	IsFirstLogin         bool
 	AgreeCount           int32
-	ThanksCount          int32
+	ThanksCount          int32 `xorm:"INDEX"`
 	ViewsCount           int32
 	Reputation           int32
-	ReputationUpdateTime time.Time
+	ReputationUpdateTime time.Time `xorm:"-" json:"-"`
+	ReputationUpdateUnix int64     `xorm:"INDEX"`
 	WeiboVisit           bool
+	Integral             int `xorm:"INDEX"`
 	DraftCount           int32
 	CommonEmail          string
-	URLToken             string
-	URLTokenUpdate       string
-	Verified             string
-	DefaultTimeZone      string
+	URLToken             string `xorm:"INDEX VARCHAR(64)"`
+	URLTokenUpdate       string `xorm:"VARCHAR(64)"`
+	Verified             string `xorm:"INDEX VARCHAR(32)"`
+	DefaultTimeZone      string `xorm:"VARCHAR(32)"`
 	EmailSetting         string
 	WeixinSetting        string
-	RecentTopics         string
+	RecentTopics         string `xorm:"TEXT"`
+	Theme                string `xorm:"VARCHAR(64)"`
+	ColumnCount          int
+	Skin                 string `xorm:"VARCHAR(32)"`
 }
 
 type UsersAttribute struct {
-	ID int64
-	UID int64
+	ID           int64
+	UID          int64
 	Introduction string
-	Signature string
-	QQ int
-	HomePage string
+	Signature    string
+	QQ           int
+	HomePage     string
 }
 
 type UsersGroup struct {
-	ID int64
-	Type int
-	Custom bool
-	Name string
-	ReputationLower int
-	ReputationHiger int
+	ID               int64
+	Type             int
+	Custom           bool
+	Name             string
+	ReputationLower  int
+	ReputationHiger  int
 	ReputationFactor int
 }
 
 type UsersNotificationSetting struct {
-	ID int64
-	UID int64
+	ID   int64
+	UID  int64
 	Data string
 }
 
 type UserOnline struct {
-	UID int64
+	UID        int64
 	LastActive int64
-	ActiveIP string
-	ActiveURL string
-	UserAgent string
+	ActiveIP   string
+	ActiveURL  string
+	UserAgent  string
 }
 
 type UsersQQ struct {
-	ID int64
-	UID int64
-	NickName string
-	OpenID int64
-	Gender string
+	ID              int64
+	UID             int64
+	NickName        string
+	OpenID          int64
+	Gender          string
 	CreatedTimeUnix int64
-	AccessToken int64
-	RefreshToken int64
-	ExpiresTime int64
-	FigureURL string
+	AccessToken     int64
+	RefreshToken    int64
+	ExpiresTime     int64
+	FigureURL       string
 }
 
 type UsersSina struct {
-	ID int64
-	UID int64
-	Name string
-	Location string
-	Description string
-	URL string
+	ID              int64
+	UID             int64
+	Name            string
+	Location        string
+	Description     string
+	URL             string
 	ProfileImageURL string
-	Gender string
+	Gender          string
 	CreatedTimeUnix int64
-	AccessToken int64
-	LastMessageID int64
+	AccessToken     int64
+	LastMessageID   int64
 }
 
 type UsersWeixin struct {
-	ID int64
-	UID int64
-	OpenID int64
-	ExpiresID int
-	AccessToken string
-	RefreshToken string
-	Scope string
-	HeadImgURL string
-	NickName string
-	Sex bool
-	Province string
-	City string
-	Country string
+	ID              int64
+	UID             int64
+	OpenID          int64
+	ExpiresID       int
+	AccessToken     string
+	RefreshToken    string
+	Scope           string
+	HeadImgURL      string
+	NickName        string
+	Sex             bool
+	Province        string
+	City            string
+	Country         string
 	CreatedTimeUnix int64
-	Latitude float64
-	LongLatitude float64
-	LocationUpdate int
+	Latitude        float64
+	LongLatitude    float64
+	LocationUpdate  int
 }
 
 type UsersYunus struct {
-	ID int64
-	UID int64
-	YUID int64
+	ID       int64
+	UID      int64
+	YUID     int64
 	UserName string
-	Email string
+	Email    string
 }
 
 type UsersGoogle struct {
-	ID int64
-	UID int64
-	Name string
-	Locale string
-	Picture string
-	Gender string
-	Email string
-	Link string
+	ID              int64
+	UID             int64
+	Name            string
+	Locale          string
+	Picture         string
+	Gender          string
+	Email           string
+	Link            string
 	CreatedTimeUnix int64
-	AccessToken int64
-	RefreshToken int64
-	ExpiresTime int64
+	AccessToken     int64
+	RefreshToken    int64
+	ExpiresTime     int64
 }
 
 type UsersFacebook struct {
-	ID int64
-	UID int64
-	Name string
-	Locale string
-	Picture string
-	Gender string
-	Email string
-	Link string
+	ID              int64
+	UID             int64
+	Name            string
+	Locale          string
+	Picture         string
+	Gender          string
+	Email           string
+	Link            string
 	CreatedTimeUnix int64
-	AccessToken int64
-	RefreshToken int64
-	ExpiresTime int64
+	AccessToken     int64
+	RefreshToken    int64
+	ExpiresTime     int64
 }
 
 type UsersTwitter struct {
-	ID int64
-	UID int64
-	Name string
-	ScreenName string
-	Location string
-	TimeZone string
-	Email string
-	Lang string
+	ID              int64
+	UID             int64
+	Name            string
+	ScreenName      string
+	Location        string
+	TimeZone        string
+	Email           string
+	Lang            string
 	CreatedTimeUnix int64
-	AccessToken int64
+	AccessToken     int64
 }
 
 type UserActionHistoryData struct {
-	ID int64
-	Content string
-	Attached string
+	ID        int64
+	Content   string
+	Attached  string
 	AddonData string
 }
 
 type UserActionHistoryFresh struct {
-	ID int64
-	HistoryID int64
-	AssociateID int64
-	AssociateType string
+	ID              int64
+	HistoryID       int64
+	AssociateID     int64
+	AssociateType   string
 	CreatedTimeUnix int64
-	UID int64
-	Anonymous bool
+	UID             int64
+	Anonymous       bool
 }
 
 type UserFollow struct {
-	ID int64
-	FansUID int64
-	FriendUID int64
+	ID              int64
+	FansUID         int64
+	FriendUID       int64
 	CreatedTimeUnix int64
 }
 
 type WeixinReplyRule struct {
-	ID int64
-	AccountID int64
-	KeyWord string
-	Title string
-	ImageFile string
+	ID          int64
+	AccountID   int64
+	KeyWord     string
+	Title       string
+	ImageFile   string
 	Description string
-	Link string
-	Enabled bool
-	SortStatus int
+	Link        string
+	Enabled     bool
+	SortStatus  int
 }
 
 type WeixinAccounts struct {
-	ID int64
-	WeixinmpToekn string
-	WeixinAccountRole string
-	WeixinAPPID string
-	WeixinAPPSecret string
-	WeixinmpMenu string
+	ID                        int64
+	WeixinmpToekn             string
+	WeixinAccountRole         string
+	WeixinAPPID               string
+	WeixinAPPSecret           string
+	WeixinmpMenu              string
 	WeixinSubscribeMessageKey string
-	WeixinNoResultMessageKey string
-	WeixinEncodingAESKey string
+	WeixinNoResultMessageKey  string
+	WeixinEncodingAESKey      string
 }
 
 type AccountMsg struct {
-	ID int64
-	Type string
-	MsgAuthID int64
-	MsgID int64
-	AccessKey string
-	GroupName string
-	Status string
-	ErrorNum int
-	MainMsg string
-	ArticlesInfo string
-	ItemID int64
-	QuestionsInfo string
-	QuestionID int64
+	ID              int64
+	Type            string
+	MsgAuthID       int64
+	MsgID           int64
+	AccessKey       string
+	GroupName       string
+	Status          string
+	ErrorNum        int
+	MainMsg         string
+	ArticlesInfo    string
+	ItemID          int64
+	QuestionsInfo   string
+	QuestionID      int64
 	CreatedTimeUnix int64
-	FilterCount int
-	HasAttach bool
+	FilterCount     int
+	HasAttach       bool
 }
 
 type WeixinQRCode struct {
-	ID int64
-	Ticket string
+	ID          int64
+	Ticket      string
 	Description string
 	SubsribeNum int
 }
-
-
 
 // BeforeInsert before insert what will do
 func (u *User) BeforeInsert() {
@@ -354,7 +356,7 @@ func GetUserSalt() (string, error) {
 // ResponseFormat reponse format
 func (u *User) ResponseFormat() *account.Account {
 	return &account.Account{
-		ID: u.ID,
+		ID:    u.ID,
 		Email: u.Email,
 	}
 }
@@ -362,17 +364,17 @@ func (u *User) ResponseFormat() *account.Account {
 // GenerateEmailActivateCode generates an activate code based on user information and given e-mail.
 func (u *User) GenerateEmailActivateCode(email string) string {
 	code := utils.CreateTimeLimitCode(
-	utils.ToStr(u.ID)+email+u.Passwd,
-	setting.Service.ActiveCodeLives, nil)
+		utils.ToStr(u.ID)+email+u.Passwd,
+		setting.Service.ActiveCodeLives, nil)
 
 	// Add tail hex username
-  code += hex.EncodeToString([]byte(u.UserName))
-  return code
+	code += hex.EncodeToString([]byte(u.UserName))
+	return code
 }
 
 // GenerateActivateCode generates an activate code based on user information.
 func (u *User) GenerateActivateCode() string {
-		return u.GenerateEmailActivateCode(u.Email)
+	return u.GenerateEmailActivateCode(u.Email)
 }
 
 // CustomAvatarPath custom avatar path
@@ -392,7 +394,7 @@ func (u *User) GenerateRandomAvatar() (err error) {
 		return fmt.Errorf("RandomImage error: %v", err)
 	}
 
-	if err = os.MkdirAll(filepath.Dir(u.CustomAvatarPath()), os.ModePerm); err !=nil {
+	if err = os.MkdirAll(filepath.Dir(u.CustomAvatarPath()), os.ModePerm); err != nil {
 		return fmt.Errorf("RandomImage mkdir: %v", err)
 	}
 
@@ -417,12 +419,12 @@ func (u *User) RelAvatarLink() string {
 	}
 	switch {
 	case setting.DisableGravatar, setting.OfflineMode:
-			if !utils.IsExist(u.CustomAvatarPath()) {
-				if err := u.GenerateRandomAvatar(); err != nil {
-					glog.V(3).Infof("GenerateRandomAvatar: %v", err)
-				}
+		if !utils.IsExist(u.CustomAvatarPath()) {
+			if err := u.GenerateRandomAvatar(); err != nil {
+				glog.V(3).Infof("GenerateRandomAvatar: %v", err)
 			}
-			return setting.APPSubURL + "/avatars/" + utils.ToStr(u.ID)
+		}
+		return setting.APPSubURL + "/avatars/" + utils.ToStr(u.ID)
 	}
 	return utils.AvatarLink(u.Email)
 }
@@ -439,8 +441,8 @@ func (u *User) AvatarLink() string {
 // GetFollowers return given user's followers
 func (u *User) GetFollowers(page int) ([]*User, error) {
 	users := make([]*User, 0, ItemsPerPage)
-	session := engine.Limit(ItemsPerPage, (page - 1)*ItemsPerPage).Where("follow.follow_id=?", u.ID)
-	switch  DbCfg.Type{
+	session := engine.Limit(ItemsPerPage, (page-1)*ItemsPerPage).Where("follow.follow_id=?", u.ID)
+	switch DbCfg.Type {
 	case "postgres":
 		session.Join("LEFT", "follow", `"user".id=follow.user_id`)
 	default:
@@ -457,8 +459,8 @@ func (u *User) IsFollowing(followID int64) bool {
 // GetFollowing return user's focus user
 func (u *User) GetFollowing(page int) ([]*User, error) {
 	users := make([]*User, 0, ItemsPerPage)
-	session := engine.Limit(ItemsPerPage, (page - 1)*ItemsPerPage).Where("follow.follow_id=?", u.ID)
-	switch  DbCfg.Type{
+	session := engine.Limit(ItemsPerPage, (page-1)*ItemsPerPage).Where("follow.follow_id=?", u.ID)
+	switch DbCfg.Type {
 	case "postgres":
 		session.Join("LEFT", "follow", `"user".id=follow.follow_id`)
 	default:
@@ -473,7 +475,7 @@ func (u *User) EncodePasswd() {
 }
 
 // ValidatePasswd checks  the valid of given passwd
-func (u *User)ValidatePasswd(passwd string) bool {
+func (u *User) ValidatePasswd(passwd string) bool {
 	newUser := &User{Passwd: passwd, Salt: u.Salt}
 	newUser.EncodePasswd()
 	return subtle.ConstantTimeCompare([]byte(u.Passwd), []byte(newUser.Passwd)) == 1
@@ -517,11 +519,11 @@ func (u *User) DeleteAvatar() error {
 	return nil
 }
 
-
 func countUsers(e Engine) int64 {
 	num, _ := e.Where("name IS NOT NULL ").Count(new(User))
 	return num
 }
+
 // CountUsers return the number of users
 func CountUsers() int64 {
 	return countUsers(engine)
@@ -529,23 +531,23 @@ func CountUsers() int64 {
 
 // isUsableName check wether name is reserved or not.
 func isUsableName(names, patterns []string, name string) error {
-		name = strings.TrimSpace(strings.ToLower(name))
-		if utf8.RuneCountInString(name) == 0 {
-			return errors.EmptyName{}
-		}
+	name = strings.TrimSpace(strings.ToLower(name))
+	if utf8.RuneCountInString(name) == 0 {
+		return errors.EmptyName{}
+	}
 
-		for n := range names {
-			if name == names[n] {
-				return errors.ErrNameReserved{Name: name}
-			}
-		}
-
-		for _, pat := range patterns {
-			if pat[0] == '*' && strings.HasSuffix(name, pat[1:]) || (pat[len(pat)-1] == '*' && strings.HasPrefix(name, pat[:len(pat)-1])) {
-				return errors.ErrNamePatternNotAllowed{Pattern: pat}
+	for n := range names {
+		if name == names[n] {
+			return errors.ErrNameReserved{Name: name}
 		}
 	}
-		return nil
+
+	for _, pat := range patterns {
+		if pat[0] == '*' && strings.HasSuffix(name, pat[1:]) || (pat[len(pat)-1] == '*' && strings.HasPrefix(name, pat[:len(pat)-1])) {
+			return errors.ErrNamePatternNotAllowed{Pattern: pat}
+		}
+	}
+	return nil
 }
 
 // IsUsableUserName ...
@@ -562,7 +564,7 @@ func CreateUser(u *User) error {
 	exist, err := IsUserExist(0, u.UserName)
 	if err != nil {
 		return err
-	}else if exist {
+	} else if exist {
 		return errors.ErrUserAlreadyExist{Name: u.UserName}
 	}
 
@@ -771,7 +773,6 @@ func GetUserByEmail(email string) (*User, error) {
 		return user, nil
 	}
 
-
 	emailAddress := &Email{Email: email, IsActivation: true}
 	has, err := engine.Get(emailAddress)
 	if err != nil {
@@ -783,11 +784,12 @@ func GetUserByEmail(email string) (*User, error) {
 
 	return nil, errors.UserNotExist{UserID: 0, UserName: email}
 }
+
 // Follow define relationship of user and its Follower.
 type Follow struct {
 	ID         int64
 	UserID     int64 `xorm:"UNIQUE(follow)"`
-	FollowID      int64 `xorm:"UNIQUE(follow)"`
+	FollowID   int64 `xorm:"UNIQUE(follow)"`
 	FollowTime time.Time
 }
 
@@ -798,7 +800,7 @@ func IsFollowing(userID, followID int64) bool {
 }
 
 // Followed userID action follow
-func Followed(userID, followID int64) (err error){
+func Followed(userID, followID int64) (err error) {
 	// check followID not equal userID and has beed Followed
 	if userID == followID || IsFollowing(userID, followID) {
 		return nil

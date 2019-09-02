@@ -2,15 +2,17 @@ package http
 
 import (
 	"context"
-	"net/http"
-
 	"github.com/julienschmidt/httprouter"
+	icontext "github.com/ustackq/indagate/pkg/context"
 	"github.com/ustackq/indagate/pkg/service"
 	"go.uber.org/zap"
+	"net/http"
+	"time"
 )
 
 const (
-	tokenAuthScheme = "token"
+	tokenAuthScheme   = "token"
+	sessionAuthScheme = "session"
 )
 
 func SetCORSResponseHeaders(rw http.ResponseWriter, r *http.Request) {
@@ -25,6 +27,9 @@ func SetCORSResponseHeaders(rw http.ResponseWriter, r *http.Request) {
 type AuthenticationHandler struct {
 	Logger                *zap.Logger
 	AuthenticationService service.AuthorizationService
+	// SessionService
+	SessionService       service.SessionService
+	SessionRenewDisabled bool
 	// use to lookup handler
 	noAuthRouter *httprouter.Router
 	Handler      http.Handler
@@ -64,7 +69,16 @@ func (ah *AuthenticationHandler) ServeHTTP(rw http.ResponseWriter, r *http.Reque
 		r = r.WithContext(ctx)
 		ah.Handler.ServeHTTP(rw, r)
 		return
+	case sessionAuthScheme:
+		ctx, err := ah.extractSession(ctx, r)
+		if err != nil {
+			break
+		}
+		r = r.WithContext(ctx)
+		ah.Handler.ServeHTTP(rw, r)
+		return
 	}
+	UnauthorizedError(ctx, rw)
 }
 
 func (ah *AuthenticationHandler) extractAuthorization(ctx context.Context, r *http.Request) (context.Context, error) {
@@ -73,9 +87,30 @@ func (ah *AuthenticationHandler) extractAuthorization(ctx context.Context, r *ht
 		return nil, err
 	}
 
-	_, err = ah.AuthenticationService.FindAuthorizationByToken(ctx, token)
+	a, err := ah.AuthenticationService.FindAuthorizationByToken(ctx, token)
 	if err != nil {
 		return ctx, err
 	}
-	return ctx, nil
+	return icontext.SetAuthorizer(ctx, a), nil
+}
+
+func (ah *AuthenticationHandler) extractSession(ctx context.Context, r *http.Request) (context.Context, error) {
+	v, err := decodeCookieSession(ctx, r)
+	if err != nil {
+		return ctx, err
+	}
+
+	s, e := ah.SessionService.FindSession(ctx, v)
+	if e != nil {
+		return ctx, e
+	}
+
+	if !ah.SessionRenewDisabled {
+		e = ah.SessionService.RenewSession(ctx, s, time.Now().Add(service.RenewSessionTime))
+		if e != nil {
+			return ctx, e
+		}
+	}
+
+	return icontext.SetAuthorizer(ctx, s), nil
 }

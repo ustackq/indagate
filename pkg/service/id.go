@@ -69,3 +69,20 @@ func unsafeBytesToString(b []byte) string {
 	}
 	return *(*string)(unsafe.Pointer(&dst))
 }
+
+// IDFromString creates an ID from a given string.
+//
+// It errors if the input string does not match a valid ID.
+func IDFromString(str string) (*ID, error) {
+	var id ID
+	err := id.DecodeFromString(str)
+	if err != nil {
+		return nil, err
+	}
+	return &id, nil
+}
+
+// DecodeFromString parses s as a hex-encoded string.
+func (i *ID) DecodeFromString(s string) error {
+	return i.Decode([]byte(s))
+}

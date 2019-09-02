@@ -97,8 +97,8 @@ func decodeAuthorization(v []byte, auth *service.Authorization) error {
 		return nil
 	}
 
-	if auth.Active == "" {
-		auth.Active = service.Active
+	if auth.Status == "" {
+		auth.Status = service.Active
 	}
 
 	return nil
@@ -267,8 +267,8 @@ func (s *Service) forEachAuthorization(ctx context.Context, tx Impl, fn func(*se
 		if err := json.Unmarshal(v, auth); err != nil {
 			return err
 		}
-		if auth.Active == "" {
-			auth.Active = service.Active
+		if auth.Status == "" {
+			auth.Status = service.Active
 		}
 		if !fn(auth) {
 			break
@@ -324,9 +324,9 @@ func (s *Service) createAuthorization(ctx context.Context, tx Impl, auth *servic
 }
 
 func encodeAuth(auth *service.Authorization) ([]byte, error) {
-	switch auth.Active {
+	switch auth.Status {
 	case "":
-		auth.Active = service.Active
+		auth.Status = service.Active
 	case service.Active, service.Inactive:
 	default:
 		return nil, &errors.Error{
@@ -411,19 +411,30 @@ func (s *Service) deleteAuthorization(ctx context.Context, tx Impl, id service.I
 	return nil
 }
 
-func (s *Service) UpdateAuthorization(ctx context.Context, id service.ID, update *service.AuthorizationUpdate) error {
-	return s.store.Modify(ctx, func(tx Impl) error {
-		return s.updateAuthorization(ctx, tx, id, update)
+func (s *Service) UpdateAuthorization(ctx context.Context, id service.ID, update *service.AuthorizationUpdate) (*service.Authorization, error) {
+	var a *service.Authorization
+	var err error
+	err = s.store.Modify(ctx, func(tx Impl) error {
+		a, err = s.updateAuthorization(ctx, tx, id, update)
+		if err != nil {
+			return &errors.Error{
+				Err: err,
+				Op:  service.OpUpdateAuthorization,
+			}
+		}
+		return nil
 	})
+
+	return a, err
 }
 
-func (s *Service) updateAuthorization(ctx context.Context, tx Impl, id service.ID, update *service.AuthorizationUpdate) error {
+func (s *Service) updateAuthorization(ctx context.Context, tx Impl, id service.ID, update *service.AuthorizationUpdate) (*service.Authorization, error) {
 	auth, err := s.findAuthorizationByID(ctx, tx, id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if update.Status != nil {
-		auth.Active = *update.Status
+		auth.Status = *update.Status
 	}
 	if update.Description != nil {
 		auth.Description = *update.Description
@@ -431,21 +442,21 @@ func (s *Service) updateAuthorization(ctx context.Context, tx Impl, id service.I
 
 	v, err := encodeAuth(auth)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	encodeID, err := id.Encode()
 	if err != nil {
-		return errors.WrapperErr(err)
+		return nil, errors.WrapperErr(err)
 	}
 
 	b, err := tx.Bucket(authBucket)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := b.Put(encodeID, v); err != nil {
-		return errors.WrapperErr(err)
+		return nil, errors.WrapperErr(err)
 	}
-	return nil
+	return auth, nil
 }

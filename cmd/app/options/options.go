@@ -29,6 +29,13 @@ import (
 	"github.com/ustackq/indagate/routes"
 )
 
+const (
+	// JaegerTracing enables tracing via the Jaeger client library
+	JaegerTracing = "jaeger"
+	// opencensus enables traing via opencensus client library
+	OpencensusTracing = "opencensus"
+)
+
 // Indagate contains configuration flags for the Indagate.
 type Indagate struct {
 	// Config define configuration file
@@ -41,11 +48,15 @@ type Indagate struct {
 	testing bool
 	// define store type: means the kind of store,now supported:mysql、postsql
 	storeType string
+	// secretType define the type of secret store
+	secretType string
 	// bolt config
 	boltClient *bolt.Client
 	boltPath   string
 	// storeConfig means the kind of store,now supported:mysql、postsql
 	storeService *store.Service
+	// sessionLength define session store time
+	sessionLength int64
 	// secretConfig define the kind of store, now supported:mysql、vault
 	secretConfig config.Store
 	// tracingType define app tracing type: now supported: opentracing、opencensus
@@ -70,7 +81,8 @@ type Indagate struct {
 	register *metrics.Registry
 	server   nethttp.Server
 	// Backend service
-	backend *http.APIBackend
+	jaegerTracerCloser io.Closer
+	backend            *http.APIBackend
 }
 
 // NewIndagateFlags will create a new IndagateFlags with default values.
@@ -96,13 +108,23 @@ func NewIndagateOptions(config string) *Indagate {
 func (ing *Indagate) Shutdown(ctx context.Context) {
 	ing.server.Shutdown(ctx)
 
-	ing.Logger.Info("Shutting donw", zap.String("service", "nats"))
+	ing.Logger.Info("Shutting down", zap.String("service", "nats"))
 	ing.natsServer.Close()
+	ing.wg.Wait()
+
+	if ing.jaegerTracerCloser != nil {
+		if err := ing.jaegerTracerCloser.Close(); err != nil {
+			ing.Logger.Warn("failed to close jaeger tracer", zap.Error(err))
+		}
+	}
 	ing.Logger.Sync()
 }
 
 // Parse parse cfg to build indagate
 func (ing *Indagate) Parse(cfg string) {
+	if cfg == "" {
+		return
+	}
 	var conf config.Configuration
 	if f, err := os.Lstat(cfg); !f.Mode().IsRegular() || err != nil {
 		fmt.Fprintln(ing.Stderr, err)
@@ -144,6 +166,8 @@ func (ing *Indagate) Registry() *metrics.Registry {
 
 func (ing *Indagate) Run(ctx context.Context) (err error) {
 	// start tracing
+	// TODO: complete tracing
+	// consider apiserver tracing
 	span, ctx := tracing.StartSpanFromContext(ctx)
 	defer span.End()
 	// set indagate server state: running
@@ -157,6 +181,7 @@ func (ing *Indagate) Run(ctx context.Context) (err error) {
 	}
 
 	// build logger conf
+	// understand the reason of logger
 	logConf := &logger.Config{
 		Format: "auto",
 		Level:  level,
@@ -176,11 +201,47 @@ func (ing *Indagate) Run(ctx context.Context) (err error) {
 
 	// config tracing
 	switch ing.tracingType {
-	case "census":
+	case OpencensusTracing:
 		ing.Logger.Info("tracing via Census")
 		// sth need to be done here.
 	}
 
+	// TODO: will using sql instead
+	// init store client
+	ing.boltClient = bolt.NewClient()
+	ing.boltClient.Path = ing.boltPath
+	ing.boltClient.WithLogger(ing.Logger.With(zap.String("service", "bbolt")))
+
+	// Open bbolt
+	if err := ing.boltClient.Open(ctx); err != nil {
+		ing.Logger.Error("failed open", zap.String("service", "bbolt"), zap.Error(err))
+		return err
+	}
+
+	serviceConfig := store.ServiceConfig{
+		SessionLength: time.Duration(ing.sessionLength) * time.Minute,
+	}
+
+	// config store
+	switch ing.storeType {
+	case store.BblotStore:
+		s := bolt.NewKVStore(ing.boltPath)
+		s.WithDB(ing.boltClient.DB())
+		ing.storeService = store.NewService(s, serviceConfig)
+		// TODO: how to testing
+	default:
+		err := fmt.Errorf("unknown store type %s: excepted bolt", ing.storeType)
+		ing.Logger.Error("expected bolt, unknown type", zap.String("store", ing.storeType))
+		return err
+	}
+
+	// config log
+	ing.storeService.Logger = ing.Logger.With(zap.String("store", ing.storeType))
+	// init store
+	if err := ing.storeService.Init(ctx); err != nil {
+		ing.Logger.Error("failed to init store", zap.Error(err))
+		return err
+	}
 	// define cache type
 	// Now we config and init store in parse step.
 
@@ -193,11 +254,22 @@ func (ing *Indagate) Run(ctx context.Context) (err error) {
 	)
 	ing.register.WithLogger(ing.Logger)
 	// TODO: serviceCollector
-
+	ing.register.MustRegister(ing.boltClient)
 	// TODO: add other services
 	var (
 		auth service.AuthorizationService = ing.storeService
 	)
+	// todo： supported other store
+	switch ing.secretType {
+	case "bolt":
+		// If bolt which has construct above
+	case "valut":
+		// TODO
+	default:
+		err := fmt.Errorf("unknown secret store type %s: excepted bolt", ing.secretType)
+		ing.Logger.Error("expected bolt, vault ,unknown type", zap.String("store", ing.secretType))
+		return err
+	}
 	// nats streaming for notify
 	ing.natsServer = nats.NewServer()
 	if err := ing.natsServer.Open(); err != nil {
@@ -214,35 +286,6 @@ func (ing *Indagate) Run(ctx context.Context) (err error) {
 		Logger: ing.Logger,
 	}
 
-	// init store client
-	ing.boltClient = bolt.NewClient()
-	ing.boltClient.Path = ing.boltPath
-	ing.boltClient.WithLogger(ing.Logger.With(zap.String("service", "bbolt")))
-
-	// Open bbolt
-	if err := ing.boltClient.Open(ctx); err != nil {
-		ing.Logger.Error("failed open", zap.String("service", "bbolt"), zap.Error(err))
-		return err
-	}
-
-	// config store
-	switch ing.storeType {
-	case store.BblotStore:
-		s := bolt.NewKVStore(ing.boltPath)
-		s.WithDB(ing.boltClient.DB())
-		ing.storeService = store.NewService(s)
-		// TODO: how to testing
-	default:
-		ing.Logger.Error("expected bolt, unknown type", zap.String("store", ing.storeType))
-	}
-
-	// config log
-	ing.storeService.Logger = ing.Logger.With(zap.String("store", ing.storeType))
-	// init store
-	if err := ing.storeService.Init(ctx); err != nil {
-		ing.Logger.Error("failed to init store", zap.Error(err))
-		return err
-	}
 	// registry prometheus metrics
 
 	// build backend

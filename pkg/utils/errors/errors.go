@@ -5,6 +5,7 @@ import (
 )
 
 // Error is indagate struct of error
+// TODO: move to service
 type Error struct {
 	Code string
 	Msg  string
@@ -17,6 +18,8 @@ type Error struct {
 const (
 	NotFound         = "not found"
 	Internal         = "internal error"
+	Forbidden        = "forbidden"
+	EmptyValue       = "empty value"
 	Invalid          = "invalid"
 	MethodNotAllowed = "method not allowed"
 	Unauthorized     = "unauthorized"
